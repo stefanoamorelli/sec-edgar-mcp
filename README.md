@@ -66,7 +66,7 @@ This identifies your application to the SEC (replace with your details). The ser
 4. **Start the MCP server**: Launch the server to begin listening for MCP clients. For example:
 
 ```bash
-mcp install sec_edgar_mcp/server.py --env-file .env --name "SEC EDGAR MCP Server" --with secedgar
+mcp install sec_edgar_mcp/server.py --env-file .env --name "SEC EDGAR MCP Server" --with secedgar==0.6.0a0
 ```
 Once running, the server will register its tools (see below) and await client connections. You should see logs indicating it's ready. 🎉
 
@@ -116,7 +116,7 @@ Example response (truncated):
       "filingDate": ["2023-10-26", "2023-07-27", ...],
       "reportDate": ["2023-09-30", "2023-06-30", ...],
       "primaryDocument": ["aapl-2023-10k.htm", "aapl-2023-q3.htm", ...],
-      ... 
+      ...
     }
   }
 }
@@ -139,7 +139,7 @@ Example call (`MCP` `JSON-RPC`):
   "method": "tools/call",
   "params": {
     "name": "get_company_concepts",
-    "arguments": { 
+    "arguments": {
       "cik": "0000320193",
       "taxonomy": "us-gaap",
       "tag": "AccountsPayableCurrent"
@@ -240,7 +240,7 @@ Example call (MCP JSON-RPC):
   "method": "tools/call",
   "params": {
     "name": "get_xbrl_frames",
-    "arguments": { 
+    "arguments": {
       "taxonomy": "us-gaap",
       "tag": "AccountsPayableCurrent",
       "unit": "USD",
