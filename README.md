@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/stefanoamorelli-sec-edgar-mcp-badge.png)](https://mseep.ai/app/stefanoamorelli-sec-edgar-mcp)
+
 <div align="center">
 
 # SEC EDGAR MCP
