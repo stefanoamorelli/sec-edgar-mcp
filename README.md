@@ -80,7 +80,9 @@ The SEC EDGAR MCP server acts as a middleman between an AI (MCP client) and the 
 
 ## Integrations
 
-In its current form, the MCP server is configured to use the [stdio](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#stdio) transport. Integrations with platforms such as [Dify](https://dify.ai) will require switching to [streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http), or possibly [SSE](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse) depending on the required [backwards compatibility](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#backwards-compatibility)). This can be done by passing a different `--transport` argument to `server.py`. However, it may also require editing `server.py`, because other arguments such as `host` may need to be passed to the FastMCP constructor.
+By default, the MCP server is configured to use the [stdio](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#stdio) transport. Integrations with platforms such as [Dify](https://dify.ai) require switching to [streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http), or possibly [SSE](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse) depending on the required [backwards compatibility](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#backwards-compatibility)). Streamable HTTP can be enabled by passing a `--transport streamable-http` argument to `server.py`.  The host and port to listen on default to host `0.0.0.0` and port `9870`.  These values can be over-ridden using the `--host` and `--port` addresses.
+
+NOTE: there is no authentication on the server, and the HTTP exposure has not been tested or assured for any particular threat model.  You would be wise to limit such usage to private, firewalled networks, or private cloud networks.  Having the server directly addressable from the whole internet would be unwise without additional security protections.
 
 ## References 📚
 

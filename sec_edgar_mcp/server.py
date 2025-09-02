@@ -3,9 +3,6 @@ from mcp.server.fastmcp import FastMCP
 from sec_edgar_mcp.tools import CompanyTools, FilingsTools, FinancialTools, InsiderTools
 
 
-# Initialize MCP server
-mcp = FastMCP("SEC EDGAR MCP", dependencies=["edgartools"])
-
 # Add system-wide instructions for deterministic responses
 DETERMINISTIC_INSTRUCTIONS = """
 CRITICAL: When responding to SEC filing data requests, you MUST follow these rules:
@@ -45,7 +42,6 @@ insider_tools = InsiderTools()
 
 
 # Company Tools
-@mcp.tool("get_cik_by_ticker")
 def get_cik_by_ticker(ticker: str):
     """
     Get the CIK (Central Index Key) for a company based on its ticker symbol.
@@ -59,7 +55,6 @@ def get_cik_by_ticker(ticker: str):
     return company_tools.get_cik_by_ticker(ticker)
 
 
-@mcp.tool("get_company_info")
 def get_company_info(identifier: str):
     """
     Get detailed information about a company from SEC records.
@@ -79,7 +74,6 @@ def get_company_info(identifier: str):
     return company_tools.get_company_info(identifier)
 
 
-@mcp.tool("search_companies")
 def search_companies(query: str, limit: int = 10):
     """
     Search for companies by name.
@@ -94,7 +88,6 @@ def search_companies(query: str, limit: int = 10):
     return company_tools.search_companies(query, limit)
 
 
-@mcp.tool("get_company_facts")
 def get_company_facts(identifier: str):
     """
     Get company facts and key financial metrics.
@@ -109,7 +102,6 @@ def get_company_facts(identifier: str):
 
 
 # Filing Tools
-@mcp.tool("get_recent_filings")
 def get_recent_filings(identifier: str = None, form_type: str = None, days: int = 30, limit: int = 50):
     """
     Get recent SEC filings for a company or across all companies.
@@ -126,7 +118,6 @@ def get_recent_filings(identifier: str = None, form_type: str = None, days: int 
     return filings_tools.get_recent_filings(identifier, form_type, days, limit)
 
 
-@mcp.tool("get_filing_content")
 def get_filing_content(identifier: str, accession_number: str):
     """
     Get the content of a specific SEC filing.
@@ -141,7 +132,6 @@ def get_filing_content(identifier: str, accession_number: str):
     return filings_tools.get_filing_content(identifier, accession_number)
 
 
-@mcp.tool("analyze_8k")
 def analyze_8k(identifier: str, accession_number: str):
     """
     Analyze an 8-K filing for specific events and items.
@@ -156,7 +146,6 @@ def analyze_8k(identifier: str, accession_number: str):
     return filings_tools.analyze_8k(identifier, accession_number)
 
 
-@mcp.tool("get_filing_sections")
 def get_filing_sections(identifier: str, accession_number: str, form_type: str):
     """
     Get specific sections from a filing (e.g., business description, risk factors, MD&A).
@@ -173,7 +162,6 @@ def get_filing_sections(identifier: str, accession_number: str, form_type: str):
 
 
 # Financial Tools
-@mcp.tool("get_financials")
 def get_financials(identifier: str, statement_type: str = "all"):
     """
     Get financial statements for a company. USE THIS TOOL when users ask for:
@@ -202,7 +190,6 @@ def get_financials(identifier: str, statement_type: str = "all"):
     return financial_tools.get_financials(identifier, statement_type)
 
 
-@mcp.tool("get_segment_data")
 def get_segment_data(identifier: str, segment_type: str = "geographic"):
     """
     Get revenue breakdown by segments (geographic, product, etc.).
@@ -217,7 +204,6 @@ def get_segment_data(identifier: str, segment_type: str = "geographic"):
     return financial_tools.get_segment_data(identifier, segment_type)
 
 
-@mcp.tool("get_key_metrics")
 def get_key_metrics(identifier: str, metrics: list = None):
     """
     Get key financial metrics for a company.
@@ -232,7 +218,6 @@ def get_key_metrics(identifier: str, metrics: list = None):
     return financial_tools.get_key_metrics(identifier, metrics)
 
 
-@mcp.tool("compare_periods")
 def compare_periods(identifier: str, metric: str, start_year: int, end_year: int):
     """
     Compare a financial metric across different time periods.
@@ -249,7 +234,6 @@ def compare_periods(identifier: str, metric: str, start_year: int, end_year: int
     return financial_tools.compare_periods(identifier, metric, start_year, end_year)
 
 
-@mcp.tool("discover_company_metrics")
 def discover_company_metrics(identifier: str, search_term: str = None):
     """
     Discover available financial metrics for a company.
@@ -264,7 +248,6 @@ def discover_company_metrics(identifier: str, search_term: str = None):
     return financial_tools.discover_company_metrics(identifier, search_term)
 
 
-@mcp.tool("get_xbrl_concepts")
 def get_xbrl_concepts(identifier: str, accession_number: str = None, concepts: list = None, form_type: str = "10-K"):
     """
     ADVANCED TOOL: Extract specific XBRL concepts from a filing.
@@ -294,7 +277,6 @@ def get_xbrl_concepts(identifier: str, accession_number: str = None, concepts: l
     return financial_tools.get_xbrl_concepts(identifier, accession_number, concepts, form_type)
 
 
-@mcp.tool("discover_xbrl_concepts")
 def discover_xbrl_concepts(
     identifier: str, accession_number: str = None, form_type: str = "10-K", namespace_filter: str = None
 ):
@@ -314,7 +296,6 @@ def discover_xbrl_concepts(
 
 
 # Insider Trading Tools
-@mcp.tool("get_insider_transactions")
 def get_insider_transactions(identifier: str, form_types: list = None, days: int = 90, limit: int = 50):
     """
     Get insider trading transactions for a company from SEC filings.
@@ -340,7 +321,6 @@ def get_insider_transactions(identifier: str, form_types: list = None, days: int
     return insider_tools.get_insider_transactions(identifier, form_types, days, limit)
 
 
-@mcp.tool("get_insider_summary")
 def get_insider_summary(identifier: str, days: int = 180):
     """
     Get a summary of insider trading activity for a company from SEC filings.
@@ -362,7 +342,6 @@ def get_insider_summary(identifier: str, days: int = 180):
     return insider_tools.get_insider_summary(identifier, days)
 
 
-@mcp.tool("get_form4_details")
 def get_form4_details(identifier: str, accession_number: str):
     """
     Get detailed information from a specific Form 4 filing.
@@ -377,7 +356,6 @@ def get_form4_details(identifier: str, accession_number: str):
     return insider_tools.get_form4_details(identifier, accession_number)
 
 
-@mcp.tool("analyze_form4_transactions")
 def analyze_form4_transactions(identifier: str, days: int = 90, limit: int = 50):
     """
     Analyze Form 4 filings and extract detailed transaction data including insider names,
@@ -406,7 +384,6 @@ def analyze_form4_transactions(identifier: str, days: int = 90, limit: int = 50)
     return insider_tools.analyze_form4_transactions(identifier, days, limit)
 
 
-@mcp.tool("analyze_insider_sentiment")
 def analyze_insider_sentiment(identifier: str, months: int = 6):
     """
     Analyze insider trading sentiment and trends over time.
@@ -422,7 +399,6 @@ def analyze_insider_sentiment(identifier: str, months: int = 6):
 
 
 # Utility Tools
-@mcp.tool("get_recommended_tools")
 def get_recommended_tools(form_type: str):
     """
     Get recommended tools for analyzing specific form types.
@@ -492,12 +468,58 @@ def get_recommended_tools(form_type: str):
         }
 
 
+def register_tools(mcp):
+    """Register all tools with the MCP server."""
+    # Company Tools
+    mcp.add_tool(get_cik_by_ticker)
+    mcp.add_tool(get_company_info)
+    mcp.add_tool(search_companies)
+    mcp.add_tool(get_company_facts)
+    
+    # Filing Tools  
+    mcp.add_tool(get_recent_filings)
+    mcp.add_tool(get_filing_content)
+    mcp.add_tool(analyze_8k)
+    mcp.add_tool(get_filing_sections)
+    
+    # Financial Tools
+    mcp.add_tool(get_financials)
+    mcp.add_tool(get_segment_data)
+    mcp.add_tool(get_key_metrics)
+    mcp.add_tool(compare_periods)
+    mcp.add_tool(discover_company_metrics)
+    mcp.add_tool(get_xbrl_concepts)
+    mcp.add_tool(discover_xbrl_concepts)
+    
+    # Insider Trading Tools
+    mcp.add_tool(get_insider_transactions)
+    mcp.add_tool(get_insider_summary)
+    mcp.add_tool(get_form4_details)
+    mcp.add_tool(analyze_form4_transactions)
+    mcp.add_tool(analyze_insider_sentiment)
+    
+    # Utility Tools
+    mcp.add_tool(get_recommended_tools)
+
+
 def main():
     """Main entry point for the MCP server."""
+    
     parser = argparse.ArgumentParser(description="SEC EDGAR MCP Server - Access SEC filings and financial data")
     parser.add_argument("--transport", default="stdio", help="Transport method")
+    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
+    parser.add_argument("--port", type=int, default=9870, help="Port to bind to (default: 9870)")
     args = parser.parse_args()
 
+    # Initialize MCP server with appropriate configuration
+    if args.transport == "streamable-http":
+        mcp = FastMCP("SEC EDGAR MCP", host=args.host, port=args.port, dependencies=["edgartools"])
+    else:
+        mcp = FastMCP("SEC EDGAR MCP", dependencies=["edgartools"])
+    
+    # Register all tools after initialization
+    register_tools(mcp)
+    
     # Run the MCP server
     mcp.run(transport=args.transport)
 
