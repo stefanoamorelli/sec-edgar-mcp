@@ -36,6 +36,29 @@ Once the SEC EDGAR MCP server is running, you can connect to it with any MCP-com
 
 For comprehensive guides, examples, and tool documentation, visit the [SEC EDGAR MCP Documentation](https://sec-edgar-mcp.amorelli.tech/).
 
+### Docker Configuration
+
+To use SEC EDGAR MCP with Docker, add the following configuration to your MCP client:
+
+```json
+{
+  "mcpServers": {
+    "sec-edgar-mcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "SEC_EDGAR_USER_AGENT=Your Name (name@domain.com)",
+        "stefanoamorelli/sec-edgar-mcp:latest"
+      ],
+      "env": {}
+    }
+  }
+}
+```
+
 **Demo**: Here's a demonstration of an AI assistant using SEC EDGAR MCP to retrieve Apple's latest filings and financial facts (click to view the video):
 
 <div align="center">
