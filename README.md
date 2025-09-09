@@ -2,6 +2,8 @@
 
 # SEC EDGAR MCP
 
+mcp-name: io.github.stefanoamorelli/sec-edgar-mcp
+
 </div>
 
 <p align="center">
