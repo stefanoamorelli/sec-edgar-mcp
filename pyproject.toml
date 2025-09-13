@@ -25,6 +25,9 @@ include = ["sec_edgar_mcp*"]
 "Homepage" = "https://github.com/stefanoamorelli/sec-edgar-mcp"
 "Bug Tracker" = "https://github.com/stefanoamorelli/sec-edgar-mcp/issues"
 
+[project.scripts]
+sec-edgar-mcp = "sec_edgar_mcp.server:mcp.run"
+
 [project.optional-dependencies]
 dev = ["ruff>=0.1.14", "mypy>=1.8"]
 
