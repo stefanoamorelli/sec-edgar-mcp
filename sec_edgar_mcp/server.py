@@ -475,13 +475,13 @@ def register_tools(mcp):
     mcp.add_tool(get_company_info)
     mcp.add_tool(search_companies)
     mcp.add_tool(get_company_facts)
-    
-    # Filing Tools  
+
+    # Filing Tools
     mcp.add_tool(get_recent_filings)
     mcp.add_tool(get_filing_content)
     mcp.add_tool(analyze_8k)
     mcp.add_tool(get_filing_sections)
-    
+
     # Financial Tools
     mcp.add_tool(get_financials)
     mcp.add_tool(get_segment_data)
@@ -490,21 +490,21 @@ def register_tools(mcp):
     mcp.add_tool(discover_company_metrics)
     mcp.add_tool(get_xbrl_concepts)
     mcp.add_tool(discover_xbrl_concepts)
-    
+
     # Insider Trading Tools
     mcp.add_tool(get_insider_transactions)
     mcp.add_tool(get_insider_summary)
     mcp.add_tool(get_form4_details)
     mcp.add_tool(analyze_form4_transactions)
     mcp.add_tool(analyze_insider_sentiment)
-    
+
     # Utility Tools
     mcp.add_tool(get_recommended_tools)
 
 
 def main():
     """Main entry point for the MCP server."""
-    
+
     parser = argparse.ArgumentParser(description="SEC EDGAR MCP Server - Access SEC filings and financial data")
     parser.add_argument("--transport", default="stdio", help="Transport method")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
@@ -516,10 +516,10 @@ def main():
         mcp = FastMCP("SEC EDGAR MCP", host=args.host, port=args.port, dependencies=["edgartools"])
     else:
         mcp = FastMCP("SEC EDGAR MCP", dependencies=["edgartools"])
-    
+
     # Register all tools after initialization
     register_tools(mcp)
-    
+
     # Run the MCP server
     mcp.run(transport=args.transport)
 
