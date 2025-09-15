@@ -1,0 +1,29 @@
+---
+title: 'Lookup Company CIK'
+description: 'Convert ticker symbols to CIK numbers'
+---
+
+## Overview
+
+The `lookup_company_cik` tool converts company ticker symbols to CIK (Central Index Key) numbers for more reliable API performance.
+
+## Parameters
+
+- `ticker` (string): Company ticker symbol (e.g., "AAPL")
+
+## Example Usage
+
+```text
+"What is Apple's CIK number?"
+```
+
+## Response Format
+
+```json
+{
+  "success": true,
+  "cik": "0000320193",
+  "ticker": "AAPL",
+  "suggestion": "Use CIK '0000320193' instead of ticker 'AAPL' for more reliable and faster API calls"
+}
+```

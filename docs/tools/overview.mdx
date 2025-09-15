@@ -1,0 +1,316 @@
+---
+title: 'Tools Overview'
+description: 'Complete reference for all SEC Edgar MCP tools'
+---
+
+## Tool Categories
+
+SEC Edgar MCP provides comprehensive tools organized into four main categories, each designed to access different aspects of SEC EDGAR data with exact precision and verifiable references.
+
+<CardGroup cols={2}>
+  <Card
+    title="Company Tools"
+    icon="building"
+    href="/tools/company/lookup-cik"
+    color="#blue"
+  >
+    Look up companies, get basic information, and access company facts
+  </Card>
+  <Card
+    title="Filing Tools"
+    icon="file-text"
+    href="/tools/filings/recent-filings"
+    color="#green"
+  >
+    Access recent filings, analyze content, and extract specific sections
+  </Card>
+  <Card
+    title="Financial Tools"
+    icon="chart-bar"
+    href="/tools/financial/financial-statements"
+    color="#orange"
+  >
+    Extract financial statements with direct XBRL parsing for exact precision
+  </Card>
+  <Card
+    title="Insider Trading Tools"
+    icon="user-tie"
+    href="/tools/insider/form-345"
+    color="#purple"
+  >
+    Monitor insider transactions and analyze Form 3, 4, and 5 filings
+  </Card>
+</CardGroup>
+
+## Core Principles
+
+All SEC Edgar MCP tools follow these core principles:
+
+### Exact Precision
+- **No Rounding**: Financial data maintains exact numeric precision as filed with the SEC
+- **Direct XBRL Parsing**: Uses regex patterns to extract data directly from SEC filings
+- **Deterministic Processing**: Consistent, repeatable results based solely on filing data
+
+### Verifiable References
+- **SEC URLs**: Every response includes clickable links to original SEC filings
+- **Filing Metadata**: Complete accession numbers, filing dates, and form types
+- **Source Attribution**: Clear indication of data source and extraction method
+
+### AI Safety Features
+- **Deterministic Responses**: Strict instructions prevent AI hallucination
+- **Filing-Only Data**: Responses based exclusively on actual SEC filing content
+- **Verification Links**: Users can independently verify all data at provided SEC URLs
+
+## Available Tools
+
+### Company Tools
+
+<AccordionGroup>
+  <Accordion title="lookup_company_cik">
+    **Purpose**: Convert company ticker symbols to CIK numbers for more reliable API calls
+    
+    **Parameters**:
+    - `ticker` (string): Company ticker symbol (e.g., "AAPL")
+    
+    **Returns**: CIK number and suggestion to use CIK for better performance
+    
+    **Example Use**: Find Apple's CIK number to use in other tools
+  </Accordion>
+
+  <Accordion title="get_company_info">
+    **Purpose**: Get detailed company information including basic facts and identifiers
+    
+    **Parameters**:
+    - `identifier` (string): Company CIK, ticker, or name
+    
+    **Returns**: Company details, SIC code, exchange, state, fiscal year end
+    
+    **Example Use**: Get comprehensive company profile information
+  </Accordion>
+
+  <Accordion title="get_company_facts">
+    **Purpose**: Extract key financial metrics from company facts database
+    
+    **Parameters**:
+    - `identifier` (string): Company CIK, ticker, or name
+    
+    **Returns**: Latest financial metrics with exact values and filing references
+    
+    **Example Use**: Get current financial snapshot of a company
+  </Accordion>
+</AccordionGroup>
+
+### Filing Tools
+
+<AccordionGroup>
+  <Accordion title="get_recent_filings">
+    **Purpose**: Get recent SEC filings for a company or across all companies
+    
+    **Parameters**:
+    - `identifier` (string, optional): Company CIK, ticker, or name
+    - `form_type` (string/array, optional): Specific form types (e.g., "10-K", ["10-K", "10-Q"])
+    - `days` (number): Number of days to look back (default: 30)
+    - `limit` (number): Maximum number of results (default: 50)
+    
+    **Returns**: List of filings with metadata and direct SEC links
+    
+    **Example Use**: Monitor recent 8-K filings for material events
+  </Accordion>
+
+  <Accordion title="get_filing_content">
+    **Purpose**: Get the complete content of a specific SEC filing
+    
+    **Parameters**:
+    - `identifier` (string): Company CIK, ticker, or name
+    - `accession_number` (string): SEC accession number
+    
+    **Returns**: Full filing text content with structured data extraction
+    
+    **Example Use**: Read the complete text of a 10-K filing
+  </Accordion>
+
+  <Accordion title="analyze_8k_filing">
+    **Purpose**: Analyze 8-K filings for specific material events and press releases
+    
+    **Parameters**:
+    - `identifier` (string): Company CIK, ticker, or name
+    - `accession_number` (string): 8-K filing accession number
+    
+    **Returns**: Detailed analysis of 8-K items, events, and press releases
+    
+    **Example Use**: Analyze what triggered a specific 8-K filing
+  </Accordion>
+
+  <Accordion title="get_filing_sections">
+    **Purpose**: Extract specific sections from 10-K or 10-Q filings
+    
+    **Parameters**:
+    - `identifier` (string): Company CIK, ticker, or name
+    - `accession_number` (string): Filing accession number
+    - `form_type` (string): "10-K" or "10-Q"
+    
+    **Returns**: Business section, risk factors, MD&A, and other key sections
+    
+    **Example Use**: Get just the risk factors section from a 10-K
+  </Accordion>
+</AccordionGroup>
+
+### Financial Tools
+
+<AccordionGroup>
+  <Accordion title="get_financial_statements">
+    **Purpose**: Extract complete financial statements with direct XBRL parsing
+    
+    **Parameters**:
+    - `identifier` (string): Company CIK, ticker, or name
+    - `statement_type` (string): "income", "balance", "cash", or "all"
+    
+    **Returns**: Financial statements with exact precision and filing references
+    
+    **Example Use**: Get Tesla's latest income statement with exact numbers
+  </Accordion>
+
+  <Accordion title="get_xbrl_concepts">
+    **Purpose**: Extract specific XBRL concepts with exact values from filings
+    
+    **Parameters**:
+    - `identifier` (string): Company CIK, ticker, or name
+    - `concepts` (array, optional): Specific XBRL concepts to extract
+    - `accession_number` (string, optional): Specific filing
+    - `form_type` (string): Filing form type (default: "10-K")
+    
+    **Returns**: Exact XBRL concept values with context and period information
+    
+    **Example Use**: Get exact revenue figure from latest 10-K
+  </Accordion>
+
+  <Accordion title="discover_company_metrics">
+    **Purpose**: Discover all available financial metrics for a company
+    
+    **Parameters**:
+    - `identifier` (string): Company CIK, ticker, or name
+    - `search_term` (string, optional): Filter metrics by search term
+    
+    **Returns**: List of available metrics with counts and latest periods
+    
+    **Example Use**: See what financial metrics are available for analysis
+  </Accordion>
+</AccordionGroup>
+
+### Insider Trading Tools
+
+<AccordionGroup>
+  <Accordion title="get_insider_transactions">
+    **Purpose**: Get insider trading transactions from Form 3, 4, and 5 filings
+    
+    **Parameters**:
+    - `identifier` (string): Company CIK, ticker, or name
+    - `days` (number): Number of days to look back (default: 90)
+    - `transaction_type` (string, optional): Filter by transaction type
+    
+    **Returns**: Detailed insider transactions with exact values and dates
+    
+    **Example Use**: Monitor recent insider buying/selling activity
+  </Accordion>
+
+  <Accordion title="analyze_form_345">
+    **Purpose**: Detailed analysis of specific Form 3, 4, or 5 insider filings
+    
+    **Parameters**:
+    - `identifier` (string): Company CIK, ticker, or name
+    - `accession_number` (string): Form 3/4/5 accession number
+    
+    **Returns**: Complete insider transaction analysis with all details
+    
+    **Example Use**: Analyze a specific insider's large transaction
+  </Accordion>
+</AccordionGroup>
+
+## Tool Usage Patterns
+
+### Basic Company Research
+1. **Start with company lookup**: Use `lookup_company_cik` to get reliable CIK
+2. **Get company profile**: Use `get_company_info` for basic information
+3. **Check recent activity**: Use `get_recent_filings` to see latest filings
+
+### Financial Analysis
+1. **Get financial statements**: Use `get_financial_statements` for complete data
+2. **Extract specific metrics**: Use `get_xbrl_concepts` for precise values
+3. **Compare periods**: Use multiple calls to analyze trends
+
+### Due Diligence
+1. **Company background**: Start with `get_company_info`
+2. **Recent filings review**: Use `get_recent_filings` and `analyze_8k_filing`
+3. **Financial health**: Use `get_financial_statements`
+4. **Insider activity**: Use `get_insider_transactions`
+
+### Compliance Monitoring
+1. **Monitor filings**: Regular `get_recent_filings` calls
+2. **Analyze events**: Use `analyze_8k_filing` for material events
+3. **Track insider trading**: Use `get_insider_transactions`
+
+## Data Quality Guarantees
+
+<Note>
+  **Exact Precision Promise**: All financial data is extracted directly from SEC XBRL filings with exact numeric precision. No estimates, calculations, or rounding are applied.
+</Note>
+
+### Verification Process
+1. **Independent Verification**: All responses include SEC URLs for independent verification
+2. **Filing References**: Complete accession numbers and filing dates provided
+3. **Source Attribution**: Clear indication of data extraction method and source
+
+### Error Handling
+- **Graceful Failures**: Tools return structured error messages when data is unavailable
+- **Fallback Methods**: Multiple extraction methods ensure maximum data availability
+- **Clear Error Messages**: Specific error descriptions help diagnose issues
+
+## Rate Limiting and Best Practices
+
+### SEC API Guidelines
+- **10 requests per second maximum** (automatically enforced)
+- **Required User-Agent header** with name and email
+- **Respectful usage** of SEC resources
+
+### Performance Tips
+- **Use CIK numbers** instead of tickers for better performance
+- **Cache results** when possible to reduce API calls
+- **Batch requests** when analyzing multiple companies
+
+### Error Recovery
+- **Retry logic**: Built-in retry for transient failures
+- **Alternative methods**: Multiple extraction approaches for reliability
+- **Clear diagnostics**: Detailed error messages for troubleshooting
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Company Tools"
+    icon="building"
+    href="/tools/company/lookup-cik"
+  >
+    Start with company lookup and information tools
+  </Card>
+  <Card
+    title="Financial Analysis"
+    icon="chart-bar"
+    href="/tools/financial/financial-statements"
+  >
+    Extract precise financial data from SEC filings
+  </Card>
+  <Card
+    title="Use Cases"
+    icon="lightbulb"
+    href="/use-cases/financial-analysis"
+  >
+    See real-world examples and applications
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/introduction"
+  >
+    Technical API documentation and schemas
+  </Card>
+</CardGroup>

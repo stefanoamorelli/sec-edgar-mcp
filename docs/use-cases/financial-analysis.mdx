@@ -1,0 +1,499 @@
+---
+title: 'Financial Analysis'
+description: 'Using SEC Edgar MCP for comprehensive financial analysis and research'
+---
+
+## Overview
+
+SEC Edgar MCP provides powerful tools for financial analysis by giving AI assistants direct access to official SEC EDGAR filings with exact precision. This enables comprehensive analysis of company financial performance, trend analysis, and peer comparisons using authoritative data sources.
+
+<Tip>
+  All financial data is extracted directly from SEC XBRL filings with exact numeric precision - no rounding or approximation is applied.
+</Tip>
+
+## Common Analysis Workflows
+
+### 1. Company Financial Health Assessment
+
+<Steps>
+  <Step title="Get Company Information">
+    Start with basic company identification and facts:
+    
+    ```text
+    "Get me basic information about Apple Inc including their CIK number"
+    ```
+    
+    **Tools Used**: `get_company_info`, `lookup_company_cik`
+  </Step>
+
+  <Step title="Extract Latest Financial Statements">
+    Get complete financial statements from the most recent 10-K or 10-Q:
+    
+    ```text
+    "Show me Apple's latest financial statements including income statement, balance sheet, and cash flow"
+    ```
+    
+    **Tools Used**: `get_financial_statements`
+  </Step>
+
+  <Step title="Analyze Key Metrics">
+    Extract specific financial metrics with exact precision:
+    
+    ```text
+    "Get Apple's exact revenue, net income, total assets, and cash position from their latest filing"
+    ```
+    
+    **Tools Used**: `get_xbrl_concepts`, `get_company_facts`
+  </Step>
+</Steps>
+
+### 2. Trend Analysis Over Time
+
+<Steps>
+  <Step title="Identify Historical Filings">
+    Find relevant filings across multiple periods:
+    
+    ```text
+    "Show me Apple's 10-K filings from the last 3 years"
+    ```
+    
+    **Tools Used**: `get_recent_filings`
+  </Step>
+
+  <Step title="Extract Consistent Metrics">
+    Get the same financial concepts from each period:
+    
+    ```text
+    "Extract revenue, gross profit, and net income from Apple's 2021, 2022, and 2023 10-K filings"
+    ```
+    
+    **Tools Used**: `get_xbrl_concepts` (multiple calls with different accession numbers)
+  </Step>
+
+  <Step title="Calculate Growth Rates">
+    AI can calculate growth rates using the exact data:
+    
+    ```text
+    "Calculate Apple's revenue growth rate over the last 3 years using the exact SEC filing data"
+    ```
+  </Step>
+</Steps>
+
+### 3. Peer Comparison Analysis
+
+<Steps>
+  <Step title="Identify Comparable Companies">
+    Start with companies in the same sector:
+    
+    ```text
+    "Get financial statements for Apple, Microsoft, and Google for peer comparison"
+    ```
+  </Step>
+
+  <Step title="Extract Standardized Metrics">
+    Use consistent XBRL concepts across companies:
+    
+    ```text
+    "Compare revenue, operating income, and total assets for Apple vs Microsoft vs Google using their latest 10-K filings"
+    ```
+  </Step>
+
+  <Step title="Analyze Ratios and Margins">
+    Calculate financial ratios using exact data:
+    
+    ```text
+    "Calculate and compare gross margins, operating margins, and ROA for these three companies"
+    ```
+  </Step>
+</Steps>
+
+## Advanced Analysis Techniques
+
+### Cash Flow Analysis
+
+<AccordionGroup>
+  <Accordion title="Operating Cash Flow Quality">
+    **Objective**: Assess the quality and sustainability of operating cash flows
+    
+    **Analysis Steps**:
+    1. Extract operating cash flow from cash flow statement
+    2. Compare to net income (cash vs. earnings quality)
+    3. Analyze working capital changes
+    4. Look for unusual items or adjustments
+    
+    **Example Query**:
+    ```text
+    "Get Apple's operating cash flow, net income, and working capital changes from their latest 10-K. Analyze the quality of their earnings."
+    ```
+  </Accordion>
+
+  <Accordion title="Free Cash Flow Analysis">
+    **Objective**: Calculate and analyze free cash flow generation
+    
+    **Analysis Steps**:
+    1. Get operating cash flow from cash flow statement
+    2. Extract capital expenditures (CapEx)
+    3. Calculate free cash flow (OCF - CapEx)
+    4. Analyze free cash flow yield and trends
+    
+    **Example Query**:
+    ```text
+    "Calculate Tesla's free cash flow by getting their operating cash flow and capital expenditures from the latest 10-K"
+    ```
+  </Accordion>
+
+  <Accordion title="Capital Allocation Analysis">
+    **Objective**: Understand how companies allocate capital
+    
+    **Analysis Steps**:
+    1. Extract cash flows from investing activities
+    2. Analyze financing activities (dividends, share buybacks, debt)
+    3. Look for acquisition and investment spending
+    4. Assess capital efficiency
+    
+    **Example Query**:
+    ```text
+    "Analyze Microsoft's capital allocation by showing their investing and financing cash flows, including acquisitions, dividends, and share repurchases"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Balance Sheet Analysis
+
+<AccordionGroup>
+  <Accordion title="Liquidity Analysis">
+    **Key Metrics**: Current ratio, quick ratio, cash position
+    
+    **XBRL Concepts**:
+    - `AssetsCurrent` (Current Assets)
+    - `LiabilitiesCurrent` (Current Liabilities)
+    - `CashAndCashEquivalentsAtCarryingValue`
+    - `AccountsReceivableNetCurrent`
+    - `InventoryNet`
+    
+    **Example Analysis**:
+    ```text
+    "Analyze Amazon's liquidity by calculating their current ratio and quick ratio using exact balance sheet data"
+    ```
+  </Accordion>
+
+  <Accordion title="Debt Analysis">
+    **Key Metrics**: Debt-to-equity, interest coverage, debt maturity
+    
+    **XBRL Concepts**:
+    - `LongTermDebtNoncurrent`
+    - `DebtCurrent` 
+    - `StockholdersEquity`
+    - `InterestExpense`
+    
+    **Example Analysis**:
+    ```text
+    "Evaluate Tesla's debt position including total debt, debt-to-equity ratio, and interest expense burden"
+    ```
+  </Accordion>
+
+  <Accordion title="Asset Quality Analysis">
+    **Focus Areas**: Asset composition, intangibles, impairments
+    
+    **XBRL Concepts**:
+    - `PropertyPlantAndEquipmentNet`
+    - `Goodwill`
+    - `IntangibleAssetsNetExcludingGoodwill`
+    - `AccountsReceivableNetCurrent`
+    
+    **Example Analysis**:
+    ```text
+    "Analyze the composition of Microsoft's assets, focusing on tangible vs intangible assets and goodwill"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Income Statement Analysis
+
+<AccordionGroup>
+  <Accordion title="Revenue Quality Analysis">
+    **Objective**: Assess revenue recognition and sustainability
+    
+    **Key Areas**:
+    - Revenue growth rates and trends
+    - Revenue mix and segment analysis
+    - Deferred revenue and contracts
+    - One-time vs. recurring revenue
+    
+    **Example Query**:
+    ```text
+    "Analyze Salesforce's revenue quality by looking at their subscription revenue vs. professional services, plus deferred revenue trends"
+    ```
+  </Accordion>
+
+  <Accordion title="Profitability Analysis">
+    **Key Metrics**: Gross margin, operating margin, net margin
+    
+    **XBRL Concepts**:
+    - `Revenues`
+    - `CostOfRevenue`
+    - `GrossProfit`
+    - `OperatingIncomeLoss`
+    - `NetIncomeLoss`
+    
+    **Example Analysis**:
+    ```text
+    "Calculate and analyze Apple's gross margin, operating margin, and net margin trends over the last 3 years"
+    ```
+  </Accordion>
+
+  <Accordion title="Expense Analysis">
+    **Focus Areas**: Operating leverage, cost structure, efficiency
+    
+    **XBRL Concepts**:
+    - `ResearchAndDevelopmentExpense`
+    - `SellingGeneralAndAdministrativeExpense`
+    - `DepreciationDepletionAndAmortization`
+    
+    **Example Analysis**:
+    ```text
+    "Analyze Google's R&D spending as a percentage of revenue and compare their operating leverage over time"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Industry-Specific Analysis
+
+### Technology Companies
+
+<CardGroup cols={2}>
+  <Card title="SaaS Metrics" icon="cloud">
+    **Key Focus**:
+    - Subscription revenue growth
+    - Deferred revenue (future bookings)
+    - Customer acquisition costs
+    - R&D investment levels
+    
+    **Example**: Analyzing Salesforce or ServiceNow
+  </Card>
+  <Card title="Hardware Companies" icon="microchip">
+    **Key Focus**:
+    - Inventory management
+    - Gross margin trends
+    - CapEx for manufacturing
+    - Supply chain efficiency
+    
+    **Example**: Analyzing Apple or Intel
+  </Card>
+</CardGroup>
+
+### Financial Services
+
+<CardGroup cols={2}>
+  <Card title="Banks" icon="building-columns">
+    **Key Focus**:
+    - Net interest margin
+    - Loan loss provisions
+    - Tier 1 capital ratios
+    - Return on assets/equity
+    
+    **Example**: Analyzing JPMorgan or Bank of America
+  </Card>
+  <Card title="Insurance" icon="shield">
+    **Key Focus**:
+    - Underwriting ratios
+    - Investment income
+    - Reserve adequacy
+    - Combined ratios
+    
+    **Example**: Analyzing Berkshire Hathaway or Progressive
+  </Card>
+</CardGroup>
+
+### Retail and Consumer
+
+<CardGroup cols={2}>
+  <Card title="Retail" icon="store">
+    **Key Focus**:
+    - Same-store sales growth
+    - Inventory turnover
+    - Operating leverage
+    - Store productivity
+    
+    **Example**: Analyzing Walmart or Target
+  </Card>
+  <Card title="Consumer Brands" icon="shopping-bag">
+    **Key Focus**:
+    - Brand investment (marketing)
+    - Gross margin trends
+    - Market share dynamics
+    - Distribution efficiency
+    
+    **Example**: Analyzing Coca-Cola or P&G
+  </Card>
+</CardGroup>
+
+## Red Flags and Risk Analysis
+
+### Financial Statement Red Flags
+
+<Warning>
+  Use SEC Edgar MCP to identify potential warning signs in financial statements:
+</Warning>
+
+<AccordionGroup>
+  <Accordion title="Revenue Quality Issues">
+    **Warning Signs to Look For**:
+    - Declining cash conversion (revenue growing faster than cash flow)
+    - Increasing accounts receivable relative to sales
+    - Growing deferred revenue without corresponding cash
+    - Unusual revenue timing or recognition
+    
+    **Analysis Query**:
+    ```text
+    "Compare Company X's revenue growth to their operating cash flow growth and analyze their accounts receivable trends"
+    ```
+  </Accordion>
+
+  <Accordion title="Expense and Asset Quality">
+    **Warning Signs to Look For**:
+    - Unusual asset impairments
+    - Growing other assets without explanation
+    - Declining asset turnover ratios
+    - Inconsistent expense categorization
+    
+    **Analysis Query**:
+    ```text
+    "Analyze Company Y's asset base for any unusual growth in intangibles or other assets, and check for recent impairment charges"
+    ```
+  </Accordion>
+
+  <Accordion title="Cash Flow Concerns">
+    **Warning Signs to Look For**:
+    - Operating cash flow significantly below net income
+    - Increasing working capital requirements
+    - Heavy reliance on financing activities for cash
+    - Declining free cash flow despite earnings growth
+    
+    **Analysis Query**:
+    ```text
+    "Compare Company Z's net income to operating cash flow over the last 3 years and analyze working capital changes"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Event-Driven Analysis
+
+### Material Event Analysis
+
+Use 8-K filings to analyze material events:
+
+<Steps>
+  <Step title="Monitor Recent 8-K Filings">
+    ```text
+    "Show me all 8-K filings for Apple in the last 30 days"
+    ```
+  </Step>
+
+  <Step title="Analyze Specific Events">
+    ```text
+    "Analyze Apple's latest 8-K filing for material events and press releases"
+    ```
+  </Step>
+
+  <Step title="Assess Financial Impact">
+    ```text
+    "Based on the 8-K analysis, what are the potential financial implications of these events?"
+    ```
+  </Step>
+</Steps>
+
+### Earnings Analysis
+
+<CardGroup cols={2}>
+  <Card title="Pre-Earnings Research" icon="magnifying-glass">
+    **Before earnings release**:
+    - Review latest 10-Q for trends
+    - Analyze recent 8-K filings for updates
+    - Check insider trading activity
+    - Review segment performance
+  </Card>
+  <Card title="Post-Earnings Analysis" icon="chart-line">
+    **After earnings release**:
+    - Compare actual vs. historical trends
+    - Analyze cash flow quality
+    - Review forward guidance (8-K)
+    - Assess margin expansion/compression
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+### Data Verification
+
+<Tip>
+  Always use the SEC URLs provided in SEC Edgar MCP responses to verify data independently. This ensures accuracy and builds confidence in your analysis.
+</Tip>
+
+1. **Check Filing Dates**: Ensure you're comparing data from similar periods
+2. **Verify Calculations**: Use exact figures from XBRL extractions
+3. **Read Footnotes**: Access full filing content for important disclosures
+4. **Cross-Reference**: Compare multiple tools' outputs for consistency
+
+### Analysis Documentation
+
+1. **Source Attribution**: Always note which SEC filing and tool provided each data point
+2. **Methodology**: Document your analysis approach and assumptions
+3. **Time Consistency**: Use consistent time periods for trend analysis
+4. **Peer Selection**: Document why specific peers were chosen for comparison
+
+### Continuous Monitoring
+
+<CardGroup cols={2}>
+  <Card title="Regular Updates" icon="refresh">
+    Monitor quarterly filings (10-Q) and annual reports (10-K) for updated financial data
+  </Card>
+  <Card title="Event Monitoring" icon="bell">
+    Watch for 8-K filings that might indicate material changes affecting your analysis
+  </Card>
+</CardGroup>
+
+## Advanced Use Cases
+
+### Acquisition Analysis
+
+When evaluating M&A targets or understanding strategic moves:
+
+```text
+"Analyze Company A's acquisition of Company B by looking at recent 8-K filings, pro forma impacts, and balance sheet changes"
+```
+
+### Turnaround Situations
+
+For companies in financial distress:
+
+```text
+"Analyze Company X's liquidity position, debt maturities, and cash burn rate using their latest 10-Q and recent 8-K filings"
+```
+
+### ESG Integration
+
+Environmental, Social, and Governance analysis:
+
+```text
+"Review Company Y's latest 10-K for sustainability investments, regulatory compliance costs, and governance-related expenses"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Investment Research"
+    icon="chart-line"
+    href="/use-cases/investment-research"
+  >
+    Learn how to use SEC Edgar MCP for investment decision-making
+  </Card>
+  <Card
+    title="Financial Tools"
+    icon="calculator"
+    href="/tools/financial/financial-statements"
+  >
+    Explore detailed financial analysis tools
+  </Card>
+</CardGroup>

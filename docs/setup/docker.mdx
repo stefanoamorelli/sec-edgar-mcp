@@ -1,0 +1,33 @@
+---
+title: 'Docker Setup'
+description: 'Running SEC Edgar MCP with Docker'
+---
+
+## Docker Installation
+
+Docker provides the most reliable and consistent way to run SEC Edgar MCP across different platforms.
+
+## Quick Start
+
+```bash
+docker pull stefanoamorelli/sec-edgar-mcp:latest
+```
+
+## Configuration
+
+Add to your MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "sec-edgar-mcp": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "SEC_EDGAR_USER_AGENT=Your Name (name@domain.com)",
+        "stefanoamorelli/sec-edgar-mcp:latest"
+      ]
+    }
+  }
+}
+```
