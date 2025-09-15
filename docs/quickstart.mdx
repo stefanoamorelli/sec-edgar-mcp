@@ -1,0 +1,272 @@
+---
+title: 'Quickstart'
+description: 'Get SEC Edgar MCP running in minutes'
+---
+
+## Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="System Requirements" icon="computer">
+    - Python 3.11 or higher
+    - Docker (optional, but recommended)
+    - MCP-compatible client (Claude Desktop, etc.)
+  </Card>
+  <Card title="SEC Requirements" icon="shield-check">
+    - Valid User-Agent header for SEC API access
+    - Email address for identification
+  </Card>
+</CardGroup>
+
+## Installation Options
+
+<Tabs>
+  <Tab title="Docker (Recommended)">
+    The fastest way to get started is using Docker:
+
+    <Steps>
+      <Step title="Pull the Docker image">
+        ```bash
+        docker pull stefanoamorelli/sec-edgar-mcp:latest
+        ```
+      </Step>
+
+      <Step title="Configure your MCP client">
+        Add this to your MCP client configuration:
+        
+        ```json
+        {
+          "mcpServers": {
+            "sec-edgar-mcp": {
+              "command": "docker",
+              "args": [
+                "run",
+                "-i",
+                "--rm",
+                "-e",
+                "SEC_EDGAR_USER_AGENT=Your Name (name@domain.com)",
+                "stefanoamorelli/sec-edgar-mcp:latest"
+              ],
+              "env": {}
+            }
+          }
+        }
+        ```
+      </Step>
+
+      <Step title="Test the connection">
+        Your MCP client should now discover the SEC Edgar tools automatically.
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Python/pip">
+    Install directly from PyPI:
+
+    <Steps>
+      <Step title="Install the package">
+        ```bash
+        pip install sec-edgar-mcp
+        ```
+      </Step>
+
+      <Step title="Set environment variable">
+        ```bash
+        export SEC_EDGAR_USER_AGENT="Your Name (name@domain.com)"
+        ```
+      </Step>
+
+      <Step title="Configure MCP client">
+        ```json
+        {
+          "mcpServers": {
+            "sec-edgar-mcp": {
+              "command": "python",
+              "args": ["-m", "sec_edgar_mcp.server"],
+              "env": {
+                "SEC_EDGAR_USER_AGENT": "Your Name (name@domain.com)"
+              }
+            }
+          }
+        }
+      ```
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="uvx">
+    Run directly without installation using uvx:
+
+    <Steps>
+      <Step title="Configure MCP client">
+        Add this to your MCP client configuration:
+        
+        ```json
+        {
+          "mcpServers": {
+            "sec-edgar-mcp": {
+              "command": "uvx",
+              "args": [
+                "--from",
+                "git+https://github.com/stefanoamorelli/sec-edgar-mcp.git",
+                "sec-edgar-mcp"
+              ],
+              "env": {
+                "SEC_EDGAR_USER_AGENT": "Your Name (name@domain.com)"
+              }
+            }
+          }
+        }
+        ```
+      </Step>
+
+      <Step title="Test the connection">
+        Your MCP client should now discover the SEC Edgar tools automatically.
+      </Step>
+    </Steps>
+
+    <Note>
+      uvx automatically handles package installation and updates, making it ideal for quick setup without managing Python environments.
+    </Note>
+  </Tab>
+</Tabs>
+
+<Warning>
+  **Important**: You must provide a valid `SEC_EDGAR_USER_AGENT` that includes your name and email address. The SEC requires this for API access and may block requests without proper identification.
+</Warning>
+
+## First Steps
+
+### 1. Verify Installation
+
+Once configured, your MCP client should automatically discover these tools:
+
+<CardGroup cols={2}>
+  <Card title="Company Tools" icon="building">
+    - `lookup_company_cik`
+    - `get_company_info` 
+    - `get_company_facts`
+  </Card>
+  <Card title="Filing Tools" icon="file-text">
+    - `get_recent_filings`
+    - `get_filing_content`
+    - `analyze_8k_filing`
+  </Card>
+  <Card title="Financial Tools" icon="chart-bar">
+    - `get_financial_statements`
+    - `extract_financial_data`
+  </Card>
+  <Card title="Insider Tools" icon="user-tie">
+    - `get_insider_transactions`
+    - `analyze_form_345`
+  </Card>
+</CardGroup>
+
+### 2. Try Your First Query
+
+Ask your AI assistant:
+
+<CodeGroup>
+```text Example Query 1
+"What's Apple's latest 10-K filing?"
+```
+
+```text Example Query 2  
+"Show me Tesla's revenue from their most recent quarterly report"
+```
+
+```text Example Query 3
+"Find insider transactions for Microsoft in the last 30 days"
+```
+</CodeGroup>
+
+### 3. Explore the Tools
+
+<Tip>
+  Each tool includes comprehensive instructions to prevent AI hallucination and ensure responses are based only on actual SEC filing data with clickable verification links.
+</Tip>
+
+## Common MCP Clients
+
+<Tabs>
+  <Tab title="Claude Desktop">
+    Add the configuration to `~/.config/claude-desktop/config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "sec-edgar-mcp": {
+          "command": "docker",
+          "args": [
+            "run", "-i", "--rm",
+            "-e", "SEC_EDGAR_USER_AGENT=Your Name (name@domain.com)",
+            "stefanoamorelli/sec-edgar-mcp:latest"
+          ]
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Other MCP Clients">
+    Any MCP-compatible client can use SEC Edgar MCP. The configuration format may vary slightly, but the core setup remains the same:
+
+    1. Specify the command to run the server
+    2. Set the `SEC_EDGAR_USER_AGENT` environment variable
+    3. The client will discover tools automatically via the MCP protocol
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Server not starting">
+    - Verify Python 3.11+ is installed
+    - Check that the `SEC_EDGAR_USER_AGENT` environment variable is set
+    - Ensure Docker is running (if using Docker method)
+  </Accordion>
+
+  <Accordion title="Tools not discovered">
+    - Restart your MCP client after adding the configuration
+    - Check the client logs for connection errors
+    - Verify the JSON configuration syntax is valid
+  </Accordion>
+
+  <Accordion title="SEC API errors">
+    - Ensure your User-Agent includes a valid email address
+    - Check your internet connection
+    - The SEC may temporarily rate limit requests
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Explore Tools"
+    icon="wrench"
+    href="/tools/overview"
+  >
+    Learn about all available SEC Edgar tools
+  </Card>
+  <Card
+    title="Configuration"
+    icon="gear"
+    href="/setup/configuration"
+  >
+    Advanced configuration options and settings
+  </Card>
+  <Card
+    title="Use Cases"
+    icon="lightbulb"
+    href="/use-cases/financial-analysis"
+  >
+    Real-world examples and use cases
+  </Card>
+  <Card
+    title="Troubleshooting"
+    icon="bug"
+    href="/setup/troubleshooting"
+  >
+    Solutions for common issues
+  </Card>
+</CardGroup>
