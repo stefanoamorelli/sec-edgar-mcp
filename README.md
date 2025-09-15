@@ -78,6 +78,23 @@ In the demo above, the assistant uses SEC EDGAR MCP tools to retrieve Apple's fi
 
 For installation and setup instructions, visit the [SEC EDGAR MCP Quickstart Guide](https://sec-edgar-mcp.amorelli.tech/setup/quickstart). For complete tool documentation, usage examples, and configuration guides, visit the [SEC EDGAR MCP Documentation](https://sec-edgar-mcp.amorelli.tech/).
 
+### Running Documentation Locally
+
+To run the documentation locally for development or offline access:
+
+```bash
+# Install Mintlify CLI globally
+npm i -g mintlify
+
+# Navigate to the docs directory
+cd docs
+
+# Start the development server
+mintlify dev
+```
+
+The documentation will be available at `http://localhost:3000`. Any changes you make to the documentation files will be reflected in real-time.
+
 ## Architecture 🏗️
 
 The SEC EDGAR MCP server acts as a middleman between an AI (MCP client) and the SEC's EDGAR backend:
