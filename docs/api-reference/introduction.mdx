@@ -1,0 +1,41 @@
+---
+title: 'API Reference Introduction'
+description: 'SEC Edgar MCP API reference and schemas'
+---
+
+## MCP Protocol Implementation
+
+SEC Edgar MCP implements the Model Context Protocol specification for tool discovery and execution.
+
+## Tool Categories
+
+<CardGroup cols={2}>
+  <Card title="Company Tools" icon="building">
+    CIK lookup, company information, and facts
+  </Card>
+  <Card title="Filing Tools" icon="file-text">
+    Recent filings, content extraction, and analysis
+  </Card>
+  <Card title="Financial Tools" icon="chart-bar">
+    XBRL financial statements and concepts
+  </Card>
+  <Card title="Insider Tools" icon="user-tie">
+    Form 3/4/5 insider transaction analysis
+  </Card>
+</CardGroup>
+
+## Response Format
+
+All tools return structured JSON with consistent format:
+
+```json
+{
+  "success": boolean,
+  "data": object,
+  "filing_reference": {
+    "sec_url": "string",
+    "accession_number": "string",
+    "filing_date": "string"
+  }
+}
+```

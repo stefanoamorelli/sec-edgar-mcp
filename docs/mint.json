@@ -1,0 +1,69 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "SEC Edgar MCP Documentation",
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#2563EB",
+    "light": "#3B82F6",
+    "dark": "#1E40AF"
+  },
+  "topbarCtaButton": {
+    "name": "GitHub",
+    "url": "https://github.com/stefanoamorelli/sec-edgar-mcp"
+  },
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "installation"
+      ]
+    },
+    {
+      "group": "Setup",
+      "pages": [
+        "setup/configuration",
+        "setup/docker",
+        "setup/mcp-clients",
+        "setup/troubleshooting"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "concepts/sec-edgar",
+        "concepts/mcp-protocol",
+        "concepts/architecture",
+        "concepts/data-sources"
+      ]
+    },
+    {
+      "group": "Tools Reference",
+      "pages": [
+        "tools/overview",
+        "tools/company/lookup-cik"
+      ]
+    },
+    {
+      "group": "Use Cases",
+      "pages": [
+        "use-cases/financial-analysis"
+      ]
+    },
+    {
+      "group": "About",
+      "pages": [
+        "authors",
+        "license"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/stefanoamorelli/sec-edgar-mcp"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true
+  }
+}

@@ -1,0 +1,395 @@
+---
+title: 'Configuration'
+description: 'Advanced configuration options for SEC Edgar MCP'
+---
+
+## Environment Variables
+
+<ParamField path="SEC_EDGAR_USER_AGENT" type="string" required>
+  **Required**. Must include your name and email address in the format: `"Your Name (email@domain.com)"`
+  
+  The SEC requires this header for all API requests and will block requests without proper identification.
+  
+  <CodeGroup>
+    ```bash Linux/Mac
+    export SEC_EDGAR_USER_AGENT="John Doe (john@company.com)"
+    ```
+    
+    ```cmd Windows (CMD)
+    set SEC_EDGAR_USER_AGENT="John Doe (john@company.com)"
+    ```
+    
+    ```powershell Windows (PowerShell)
+    $env:SEC_EDGAR_USER_AGENT = "John Doe (john@company.com)"
+    ```
+  </CodeGroup>
+</ParamField>
+
+<ParamField path="SEC_EDGAR_CACHE_DIR" type="string" default="~/.cache/sec-edgar">
+  Directory for caching SEC data to improve performance and reduce API calls.
+  
+  ```bash
+  export SEC_EDGAR_CACHE_DIR="/path/to/custom/cache"
+  ```
+</ParamField>
+
+<ParamField path="SEC_EDGAR_RATE_LIMIT" type="integer" default="10">
+  Requests per second limit. SEC allows up to 10 requests per second.
+  
+  ```bash
+  export SEC_EDGAR_RATE_LIMIT="8"  # Conservative limit
+  ```
+</ParamField>
+
+<ParamField path="SEC_EDGAR_TIMEOUT" type="integer" default="30">
+  Request timeout in seconds for SEC API calls.
+  
+  ```bash
+  export SEC_EDGAR_TIMEOUT="60"  # Longer timeout for large filings
+  ```
+</ParamField>
+
+<ParamField path="SEC_EDGAR_DEBUG" type="boolean" default="false">
+  Enable debug logging for troubleshooting.
+  
+  ```bash
+  export SEC_EDGAR_DEBUG="true"
+  ```
+</ParamField>
+
+## MCP Client Configuration
+
+### Claude Desktop
+
+Configure Claude Desktop by editing `~/.config/claude-desktop/config.json`:
+
+<Tabs>
+  <Tab title="Docker Configuration">
+    ```json
+    {
+      "mcpServers": {
+        "sec-edgar-mcp": {
+          "command": "docker",
+          "args": [
+            "run",
+            "-i",
+            "--rm",
+            "-e", "SEC_EDGAR_USER_AGENT=Your Name (name@domain.com)",
+            "-e", "SEC_EDGAR_CACHE_DIR=/cache",
+            "-e", "SEC_EDGAR_RATE_LIMIT=8",
+            "-v", "/home/user/.cache/sec-edgar:/cache",
+            "stefanoamorelli/sec-edgar-mcp:latest"
+          ],
+          "env": {}
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python Configuration">
+    ```json
+    {
+      "mcpServers": {
+        "sec-edgar-mcp": {
+          "command": "python",
+          "args": ["-m", "sec_edgar_mcp.server"],
+          "env": {
+            "SEC_EDGAR_USER_AGENT": "Your Name (name@domain.com)",
+            "SEC_EDGAR_CACHE_DIR": "/home/user/.cache/sec-edgar",
+            "SEC_EDGAR_RATE_LIMIT": "8",
+            "SEC_EDGAR_TIMEOUT": "60"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Other MCP Clients
+
+For other MCP-compatible clients, adapt the configuration format but maintain these key elements:
+
+<CardGroup cols={2}>
+  <Card title="Command" icon="terminal">
+    How to start the server:
+    - Docker: `docker run ...`
+    - Python: `python -m sec_edgar_mcp.server`
+  </Card>
+  <Card title="Environment" icon="gear">
+    Required environment variables:
+    - `SEC_EDGAR_USER_AGENT`
+    - Optional performance tuning vars
+  </Card>
+</CardGroup>
+
+## Advanced Configuration
+
+### Custom Cache Configuration
+
+For production or high-volume usage, configure a persistent cache:
+
+```bash
+# Create dedicated cache directory
+mkdir -p /opt/sec-edgar-cache
+chmod 755 /opt/sec-edgar-cache
+
+# Set environment variable
+export SEC_EDGAR_CACHE_DIR="/opt/sec-edgar-cache"
+```
+
+### Rate Limiting Strategy
+
+<Tip>
+  The SEC allows up to 10 requests per second, but being conservative can improve reliability:
+</Tip>
+
+```bash
+# Conservative rate limiting for production
+export SEC_EDGAR_RATE_LIMIT="8"
+
+# Aggressive rate limiting for development/testing
+export SEC_EDGAR_RATE_LIMIT="5"
+```
+
+### Timeout Configuration
+
+Adjust timeouts based on your use case:
+
+```bash
+# Short timeout for interactive use
+export SEC_EDGAR_TIMEOUT="30"
+
+# Long timeout for large filing analysis
+export SEC_EDGAR_TIMEOUT="120"
+
+# Very long timeout for comprehensive analysis
+export SEC_EDGAR_TIMEOUT="300"
+```
+
+## Docker-Specific Configuration
+
+### Volume Mounting
+
+Mount a persistent cache volume:
+
+```bash
+docker run -i --rm \
+  -e SEC_EDGAR_USER_AGENT="Your Name (name@domain.com)" \
+  -v /host/cache/path:/cache \
+  -e SEC_EDGAR_CACHE_DIR=/cache \
+  stefanoamorelli/sec-edgar-mcp:latest
+```
+
+### Resource Limits
+
+Set resource limits for production:
+
+```bash
+docker run -i --rm \
+  --memory="1g" \
+  --cpus="2" \
+  -e SEC_EDGAR_USER_AGENT="Your Name (name@domain.com)" \
+  stefanoamorelli/sec-edgar-mcp:latest
+```
+
+### Network Configuration
+
+For proxy or firewall environments:
+
+```bash
+docker run -i --rm \
+  --network=host \
+  -e HTTP_PROXY="http://proxy.company.com:8080" \
+  -e HTTPS_PROXY="http://proxy.company.com:8080" \
+  -e SEC_EDGAR_USER_AGENT="Your Name (name@domain.com)" \
+  stefanoamorelli/sec-edgar-mcp:latest
+```
+
+## Performance Tuning
+
+### Memory Optimization
+
+For memory-constrained environments:
+
+```python
+# In your MCP client configuration
+{
+  "env": {
+    "SEC_EDGAR_USER_AGENT": "Your Name (name@domain.com)",
+    "SEC_EDGAR_CACHE_SIZE": "100",  # Limit cache entries
+    "SEC_EDGAR_MEMORY_LIMIT": "512m"  # Memory limit
+  }
+}
+```
+
+### Concurrent Processing
+
+Configure concurrent request handling:
+
+```bash
+export SEC_EDGAR_MAX_WORKERS="4"  # Concurrent workers
+export SEC_EDGAR_BATCH_SIZE="10"  # Batch size for bulk operations
+```
+
+## Security Configuration
+
+### Network Security
+
+<Warning>
+  Ensure SEC Edgar MCP only communicates with authorized SEC endpoints.
+</Warning>
+
+```bash
+# Restrict outbound connections (firewall rules)
+iptables -A OUTPUT -d sec.gov -p tcp --dport 443 -j ACCEPT
+iptables -A OUTPUT -p tcp --dport 443 -j DROP
+```
+
+### User Agent Security
+
+<Note>
+  Never use fake or misleading User-Agent headers. The SEC requires accurate identification.
+</Note>
+
+```bash
+# Good - includes real contact information
+export SEC_EDGAR_USER_AGENT="Company Analysis Tool - John Doe (john@company.com)"
+
+# Bad - fake or misleading information
+export SEC_EDGAR_USER_AGENT="Mozilla/5.0 Browser"
+```
+
+## Logging Configuration
+
+### Enable Debug Logging
+
+```bash
+export SEC_EDGAR_DEBUG="true"
+export SEC_EDGAR_LOG_LEVEL="DEBUG"
+export SEC_EDGAR_LOG_FILE="/var/log/sec-edgar-mcp.log"
+```
+
+### Structured Logging
+
+For production environments:
+
+```json
+{
+  "env": {
+    "SEC_EDGAR_LOG_FORMAT": "json",
+    "SEC_EDGAR_LOG_LEVEL": "INFO",
+    "SEC_EDGAR_LOG_FILE": "/var/log/sec-edgar-mcp.log"
+  }
+}
+```
+
+## Validation
+
+### Configuration Validation
+
+Test your configuration:
+
+<Tabs>
+  <Tab title="Docker">
+    ```bash
+    docker run --rm \
+      -e SEC_EDGAR_USER_AGENT="Your Name (name@domain.com)" \
+      stefanoamorelli/sec-edgar-mcp:latest \
+      --test-config
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```bash
+    python -m sec_edgar_mcp.server --test-config
+    ```
+  </Tab>
+</Tabs>
+
+### Connection Testing
+
+Verify SEC API connectivity:
+
+```bash
+# Test basic connectivity
+curl -H "User-Agent: Your Name (name@domain.com)" \
+     "https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json"
+```
+
+## Troubleshooting Configuration
+
+<AccordionGroup>
+  <Accordion title="User-Agent Rejected">
+    **Problem**: SEC API returns 403 Forbidden
+    
+    **Solution**: Ensure User-Agent includes valid email address:
+    ```bash
+    export SEC_EDGAR_USER_AGENT="John Doe (john.doe@company.com)"
+    ```
+  </Accordion>
+
+  <Accordion title="Rate Limiting Errors">
+    **Problem**: Too many requests errors
+    
+    **Solution**: Reduce rate limit:
+    ```bash
+    export SEC_EDGAR_RATE_LIMIT="5"
+    ```
+  </Accordion>
+
+  <Accordion title="Cache Permission Issues">
+    **Problem**: Cannot write to cache directory
+    
+    **Solution**: Fix permissions:
+    ```bash
+    mkdir -p ~/.cache/sec-edgar
+    chmod 755 ~/.cache/sec-edgar
+    ```
+  </Accordion>
+
+  <Accordion title="Timeout Issues">
+    **Problem**: Requests timing out
+    
+    **Solution**: Increase timeout:
+    ```bash
+    export SEC_EDGAR_TIMEOUT="120"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Configuration Examples
+
+### Development Setup
+
+```bash
+# Development configuration
+export SEC_EDGAR_USER_AGENT="Dev Testing (developer@company.com)"
+export SEC_EDGAR_RATE_LIMIT="5"
+export SEC_EDGAR_DEBUG="true"
+export SEC_EDGAR_CACHE_DIR="./dev-cache"
+```
+
+### Production Setup
+
+```bash
+# Production configuration
+export SEC_EDGAR_USER_AGENT="Production Analysis (ops@company.com)"
+export SEC_EDGAR_RATE_LIMIT="8"
+export SEC_EDGAR_TIMEOUT="60"
+export SEC_EDGAR_CACHE_DIR="/opt/sec-edgar-cache"
+export SEC_EDGAR_LOG_LEVEL="INFO"
+export SEC_EDGAR_LOG_FILE="/var/log/sec-edgar.log"
+```
+
+### High-Volume Setup
+
+```bash
+# High-volume configuration
+export SEC_EDGAR_USER_AGENT="Batch Analysis (batch@company.com)"
+export SEC_EDGAR_RATE_LIMIT="9"
+export SEC_EDGAR_MAX_WORKERS="8"
+export SEC_EDGAR_BATCH_SIZE="20"
+export SEC_EDGAR_CACHE_SIZE="1000"
+```

@@ -1,0 +1,348 @@
+---
+title: 'SEC EDGAR System'
+description: 'Understanding the SEC EDGAR filing system and data sources'
+---
+
+## What is SEC EDGAR?
+
+EDGAR (Electronic Data Gathering, Analysis, and Retrieval) is the U.S. Securities and Exchange Commission's primary system for companies to submit official filings. It serves as the central repository for corporate financial information and "increases the efficiency, transparency, and fairness of the securities markets" by providing free public access to this data.
+
+<Note>
+  **Important**: EDGAR® and SEC® are trademarks of the U.S. Securities and Exchange Commission. SEC Edgar MCP is not affiliated with or approved by the U.S. Securities and Exchange Commission.
+</Note>
+
+## Key Filing Types
+
+### Periodic Reports
+
+<AccordionGroup>
+  <Accordion title="Form 10-K (Annual Report)">
+    **Purpose**: Comprehensive annual overview of the company's business and financial condition
+    
+    **Filing Deadline**: 
+    - Large accelerated filers: 60 days after fiscal year-end
+    - Accelerated filers: 75 days after fiscal year-end
+    - Non-accelerated filers: 90 days after fiscal year-end
+    
+    **Key Sections**:
+    - Business overview and strategy
+    - Risk factors
+    - Financial statements and data
+    - Management's Discussion and Analysis (MD&A)
+    
+    **SEC Edgar MCP Tools**: 
+    - `get_recent_filings` with form_type="10-K"
+    - `get_filing_content` for full text
+    - `get_financial_statements` for XBRL data
+    - `get_filing_sections` for specific sections
+  </Accordion>
+
+  <Accordion title="Form 10-Q (Quarterly Report)">
+    **Purpose**: Quarterly financial performance and position updates
+    
+    **Filing Deadline**: 40-45 days after quarter-end (varies by filer type)
+    
+    **Key Sections**:
+    - Condensed financial statements
+    - MD&A for the quarter
+    - Legal proceedings updates
+    - Material changes in financial condition
+    
+    **SEC Edgar MCP Tools**: 
+    - `get_recent_filings` with form_type="10-Q"
+    - `get_financial_statements` for quarterly data
+    - `get_xbrl_concepts` for specific metrics
+  </Accordion>
+
+  <Accordion title="Form 8-K (Current Report)">
+    **Purpose**: Reports material events or corporate changes within 4 business days
+    
+    **Filing Deadline**: Within 4 business days of the triggering event
+    
+    **Common Items**:
+    - Item 1.01: Material agreements
+    - Item 2.02: Results of operations
+    - Item 5.02: Officer/director changes
+    - Item 7.01: Regulation FD disclosure
+    - Item 8.01: Other events
+    
+    **SEC Edgar MCP Tools**: 
+    - `analyze_8k_filing` for detailed event analysis
+    - `get_recent_filings` with form_type="8-K"
+  </Accordion>
+</AccordionGroup>
+
+### Proxy and Information Statements
+
+<AccordionGroup>
+  <Accordion title="DEF 14A (Proxy Statement)">
+    **Purpose**: Information provided to shareholders before annual meetings
+    
+    **Key Information**:
+    - Executive compensation details
+    - Board of directors information
+    - Shareholder proposals
+    - Corporate governance matters
+    
+    **Timing**: Filed in advance of annual shareholder meetings
+  </Accordion>
+</AccordionGroup>
+
+### Ownership and Insider Trading
+
+<AccordionGroup>
+  <Accordion title="Form 3 (Initial Statement of Ownership)">
+    **Purpose**: Filed by new insiders within 10 days of becoming an insider
+    
+    **Who Files**: Officers, directors, and 10%+ shareholders
+    
+    **SEC Edgar MCP Tools**: 
+    - `get_insider_transactions`
+    - `analyze_form_345`
+  </Accordion>
+
+  <Accordion title="Form 4 (Statement of Changes in Ownership)">
+    **Purpose**: Reports changes in insider holdings
+    
+    **Filing Deadline**: Within 2 business days of the transaction
+    
+    **Transaction Types**:
+    - Purchases and sales
+    - Option exercises
+    - Gifts and transfers
+    - Stock awards and grants
+    
+    **SEC Edgar MCP Tools**: 
+    - `get_insider_transactions` for recent activity
+    - `analyze_form_345` for detailed transaction analysis
+  </Accordion>
+
+  <Accordion title="Form 5 (Annual Statement of Ownership)">
+    **Purpose**: Annual report of changes in ownership not previously reported
+    
+    **Filing Deadline**: 45 days after fiscal year-end
+    
+    **Covers**: Transactions that were exempt from Form 4 reporting
+  </Accordion>
+</AccordionGroup>
+
+## XBRL: The Data Standard
+
+### What is XBRL?
+
+XBRL (eXtensible Business Reporting Language) is a standardized format for business and financial data that makes information machine-readable and comparable across companies.
+
+<Tip>
+  SEC Edgar MCP performs direct XBRL parsing to extract financial data with exact precision, maintaining the numeric accuracy as filed with the SEC.
+</Tip>
+
+### XBRL Namespaces
+
+<CardGroup cols={2}>
+  <Card title="US-GAAP" icon="flag-usa">
+    **US Generally Accepted Accounting Principles**
+    
+    Standard concepts like:
+    - `us-gaap:Assets`
+    - `us-gaap:Revenues`
+    - `us-gaap:NetIncomeLoss`
+  </Card>
+  <Card title="Company-Specific" icon="building">
+    **Company Extensions**
+    
+    Custom concepts for unique items:
+    - `aapl:iPhoneRevenue`
+    - `tsla:AutomotiveSales`
+    - `msft:ProductivityRevenue`
+  </Card>
+</CardGroup>
+
+### XBRL Structure
+
+```xml
+<ix:nonFraction contextRef="Q32023" name="us-gaap:Revenues" unitRef="USD" 
+                decimals="-6" scale="6">29900</ix:nonFraction>
+```
+
+**Components**:
+- **Context**: Time period and entity information
+- **Concept**: What is being measured (e.g., Revenue)
+- **Unit**: Measurement unit (USD, shares, etc.)
+- **Value**: The actual reported value
+- **Scale**: Multiplication factor (scale="6" means multiply by 1,000,000)
+
+## Data Quality and Precision
+
+### SEC Edgar MCP's Approach
+
+<CardGroup cols={3}>
+  <Card title="Direct Parsing" icon="magnifying-glass">
+    Extracts data directly from XBRL using regex patterns, not API approximations
+  </Card>
+  <Card title="Exact Precision" icon="calculator">
+    Maintains exact numeric precision with proper scale factors applied
+  </Card>
+  <Card title="Source Attribution" icon="link">
+    Every response includes SEC URLs for independent verification
+  </Card>
+</CardGroup>
+
+### Common Data Challenges
+
+<AccordionGroup>
+  <Accordion title="Scale Factors">
+    **Problem**: XBRL values often use scale factors (e.g., scale="6" for millions)
+    
+    **SEC Edgar MCP Solution**: Automatically applies scale factors to provide actual values
+    
+    **Example**: 
+    - XBRL value: 29900 with scale="6"  
+    - Actual value: 29,900,000,000 (29.9 billion)
+  </Accordion>
+
+  <Accordion title="Context Periods">
+    **Problem**: Same concept can have multiple values for different periods
+    
+    **SEC Edgar MCP Solution**: Provides period context and selects most recent values by default
+    
+    **Example**: Revenue for Q1, Q2, Q3, and annual periods all in same filing
+  </Accordion>
+
+  <Accordion title="Company Extensions">
+    **Problem**: Companies create custom XBRL concepts not in standard taxonomies
+    
+    **SEC Edgar MCP Solution**: Discovers and extracts both standard and company-specific concepts
+    
+    **Example**: Apple's iPhone-specific revenue breakdowns
+  </Accordion>
+</AccordionGroup>
+
+## Filing Lifecycle
+
+### 1. Preparation Phase
+- Companies prepare financial statements and disclosures
+- XBRL tagging applied to financial data
+- Legal and compliance review
+
+### 2. Filing Submission
+- Electronic submission through EDGAR system
+- SEC assigns accession number (format: 0000320193-23-000064)
+- Automatic validation checks
+
+### 3. Public Availability
+- **Immediate**: Filing appears in EDGAR database
+- **Processing**: SEC systems index and process the data
+- **API Access**: Data becomes available through SEC APIs
+
+### 4. SEC Edgar MCP Access
+- Real-time access to filed data
+- Direct XBRL parsing for financial precision
+- Structured tool responses with verification links
+
+## Data Sources and APIs
+
+### SEC EDGAR REST API
+
+<CardGroup cols={2}>
+  <Card title="Company Facts" icon="chart-bar">
+    **Endpoint**: `/api/xbrl/companyfacts/CIK{cik}.json`
+    
+    **Purpose**: Aggregated financial facts across all filings
+    
+    **SEC Edgar MCP Usage**: `get_company_facts`
+  </Card>
+  <Card title="Submissions" icon="file-text">
+    **Endpoint**: `/api/xbrl/submissions/CIK{cik}.json`
+    
+    **Purpose**: Complete filing history and metadata
+    
+    **SEC Edgar MCP Usage**: `get_recent_filings`
+  </Card>
+</CardGroup>
+
+### Direct Filing Access
+
+```
+https://www.sec.gov/Archives/edgar/data/{cik}/{accession-no-dashes}/{accession-no}.txt
+```
+
+**SEC Edgar MCP Usage**: 
+- `get_filing_content` for full text
+- `get_xbrl_concepts` for direct XBRL parsing
+- `analyze_8k_filing` for structured analysis
+
+## Regulatory Context
+
+### SEC Reporting Requirements
+
+<Timeline>
+  <TimelineItem title="1934 Securities Exchange Act">
+    Established periodic reporting requirements for public companies
+  </TimelineItem>
+  <TimelineItem title="1996 EDGAR Mandate">
+    Required electronic filing of most SEC documents
+  </TimelineItem>
+  <TimelineItem title="2009 XBRL Requirement">
+    Mandated XBRL for financial statements in 10-K and 10-Q filings
+  </TimelineItem>
+  <TimelineItem title="2019 Inline XBRL">
+    Required human-readable and machine-readable formats in single document
+  </TimelineItem>
+</Timeline>
+
+### Compliance and Accuracy
+
+<Warning>
+  Public companies face significant penalties for inaccurate or late filings. SEC Edgar MCP provides access to this official, legally-binding financial data.
+</Warning>
+
+**Key Points**:
+- **Legal Accuracy**: Filed data is subject to CEO/CFO certification
+- **Audit Requirements**: Financial statements audited by independent firms
+- **Real-time Updates**: 8-K filings provide timely disclosure of material events
+- **Standardization**: XBRL enables consistent cross-company analysis
+
+## Using SEC EDGAR Data Effectively
+
+### Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Verify Sources" icon="shield-check">
+    Always check SEC URLs provided in SEC Edgar MCP responses for independent verification
+  </Card>
+  <Card title="Understand Context" icon="lightbulb">
+    Consider filing dates, periods, and any restatements when analyzing data
+  </Card>
+  <Card title="Compare Consistently" icon="scale-balanced">
+    Use same periods and concepts when comparing companies
+  </Card>
+  <Card title="Read Disclosures" icon="book-open">
+    Financial statements include important footnotes and disclosures
+  </Card>
+</CardGroup>
+
+### Common Analysis Patterns
+
+1. **Trend Analysis**: Compare same metrics across multiple periods
+2. **Peer Comparison**: Analyze similar companies using consistent concepts
+3. **Event Impact**: Use 8-K filings to understand material events
+4. **Insider Activity**: Monitor Form 4 filings for insider sentiment
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="MCP Protocol"
+    icon="plug"
+    href="/concepts/mcp-protocol"
+  >
+    Learn how SEC Edgar MCP uses the Model Context Protocol
+  </Card>
+  <Card
+    title="Tools Overview"
+    icon="wrench"
+    href="/tools/overview"
+  >
+    Explore all available SEC Edgar MCP tools
+  </Card>
+</CardGroup>

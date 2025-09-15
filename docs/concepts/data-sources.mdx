@@ -1,0 +1,24 @@
+---
+title: 'Data Sources'
+description: 'Understanding SEC EDGAR data sources and APIs'
+---
+
+## Official SEC Data Sources
+
+SEC Edgar MCP accesses multiple official SEC data sources:
+
+### SEC EDGAR REST API
+- **Company Facts**: `/api/xbrl/companyfacts/CIK{cik}.json`
+- **Company Submissions**: `/api/xbrl/submissions/CIK{cik}.json`
+- **Frames**: Aggregated XBRL data across companies
+
+### Direct Filing Access
+- **Filing Documents**: Individual SEC filing .txt files
+- **XBRL Content**: Direct XBRL parsing from filing source
+
+## Data Quality Guarantees
+
+- **Real-time Access**: Direct from SEC systems
+- **Exact Precision**: No rounding or approximation
+- **Official Source**: Legally-binding filed documents
+- **Verifiable**: All data includes SEC URL references

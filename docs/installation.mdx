@@ -1,0 +1,388 @@
+---
+title: 'Installation'
+description: 'Complete installation guide for SEC Edgar MCP'
+---
+
+## System Requirements
+
+<CardGroup cols={3}>
+  <Card title="Python" icon="python">
+    **Version**: 3.11 or higher  
+    **Required**: Yes
+  </Card>
+  <Card title="Docker" icon="docker">
+    **Version**: Any recent version  
+    **Required**: Optional but recommended
+  </Card>
+  <Card title="MCP Client" icon="plug">
+    **Examples**: Claude Desktop, MCP CLI  
+    **Required**: Yes
+  </Card>
+</CardGroup>
+
+## Installation Methods
+
+### Method 1: Docker (Recommended)
+
+Docker provides the most reliable and consistent installation experience:
+
+<Steps>
+  <Step title="Install Docker">
+    If you don't have Docker installed:
+    
+    <Tabs>
+      <Tab title="Windows/Mac">
+        Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+      </Tab>
+      <Tab title="Linux">
+        ```bash
+        # Ubuntu/Debian
+        sudo apt-get update
+        sudo apt-get install docker.io
+        
+        # CentOS/RHEL
+        sudo yum install docker
+        
+        # Start Docker service
+        sudo systemctl start docker
+        sudo systemctl enable docker
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Pull SEC Edgar MCP Image">
+    ```bash
+    docker pull stefanoamorelli/sec-edgar-mcp:latest
+    ```
+    
+    <Tip>
+      The Docker image is automatically built and tested, ensuring consistency across all platforms.
+    </Tip>
+  </Step>
+
+  <Step title="Verify Installation">
+    Test the Docker image:
+    ```bash
+    docker run --rm stefanoamorelli/sec-edgar-mcp:latest --version
+    ```
+  </Step>
+</Steps>
+
+### Method 2: Python Package (PyPI)
+
+Install directly from Python Package Index:
+
+<Steps>
+  <Step title="Verify Python Version">
+    ```bash
+    python --version
+    # Should be 3.11 or higher
+    ```
+  </Step>
+
+  <Step title="Create Virtual Environment (Recommended)">
+    ```bash
+    python -m venv sec-edgar-env
+    source sec-edgar-env/bin/activate  # On Windows: sec-edgar-env\Scripts\activate
+    ```
+  </Step>
+
+  <Step title="Install Package">
+    ```bash
+    pip install sec-edgar-mcp
+    ```
+    
+    For development dependencies:
+    ```bash
+    pip install sec-edgar-mcp[dev]
+    ```
+  </Step>
+
+  <Step title="Verify Installation">
+    ```bash
+    python -m sec_edgar_mcp.server --version
+    ```
+  </Step>
+</Steps>
+
+### Method 3: uvx (No Installation Required)
+
+Run directly without installation using uvx:
+
+<Steps>
+  <Step title="Install uvx">
+    If you don't have uvx installed:
+    ```bash
+    pip install uvx
+    # or
+    pipx install uvx
+    ```
+  </Step>
+
+  <Step title="Run SEC Edgar MCP">
+    No installation needed - uvx will handle everything:
+    ```bash
+    uvx --from git+https://github.com/stefanoamorelli/sec-edgar-mcp.git sec-edgar-mcp
+    ```
+    
+    <Tip>
+      uvx automatically manages package installation and updates, making it ideal for quick setup without managing Python environments.
+    </Tip>
+  </Step>
+
+  <Step title="Configure MCP Client">
+    Add to your MCP client configuration:
+    ```json
+    {
+      "mcpServers": {
+        "sec-edgar-mcp": {
+          "command": "uvx",
+          "args": [
+            "--from",
+            "git+https://github.com/stefanoamorelli/sec-edgar-mcp.git",
+            "sec-edgar-mcp"
+          ],
+          "env": {
+            "SEC_EDGAR_USER_AGENT": "Your Name (name@domain.com)"
+          }
+        }
+      }
+    }
+    ```
+  </Step>
+</Steps>
+
+### Method 4: Development Installation
+
+For contributors and developers:
+
+<Steps>
+  <Step title="Clone Repository">
+    ```bash
+    git clone https://github.com/stefanoamorelli/sec-edgar-mcp.git
+    cd sec-edgar-mcp
+    ```
+  </Step>
+
+  <Step title="Create Virtual Environment">
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
+  </Step>
+
+  <Step title="Install in Development Mode">
+    ```bash
+    pip install -e .[dev]
+    ```
+  </Step>
+
+  <Step title="Run Tests">
+    ```bash
+    python -m pytest tests/
+    ```
+  </Step>
+</Steps>
+
+## Configuration
+
+### Environment Variables
+
+<ParamField path="SEC_EDGAR_USER_AGENT" type="string" required>
+  **Required**. Must include your name and email address.
+  
+  Example: `"John Doe (john@example.com)"`
+  
+  <Warning>
+    The SEC requires this header and may block requests without proper identification.
+  </Warning>
+</ParamField>
+
+<ParamField path="SEC_EDGAR_CACHE_DIR" type="string" default="~/.cache/sec-edgar">
+  Directory for caching SEC data to improve performance.
+</ParamField>
+
+<ParamField path="SEC_EDGAR_RATE_LIMIT" type="integer" default="10">
+  Requests per second limit to respect SEC API guidelines.
+</ParamField>
+
+### Setting Environment Variables
+
+<Tabs>
+  <Tab title="Linux/Mac">
+    ```bash
+    export SEC_EDGAR_USER_AGENT="Your Name (name@domain.com)"
+    export SEC_EDGAR_CACHE_DIR="~/sec-edgar-cache"
+    ```
+    
+    Add to your shell profile (`~/.bashrc`, `~/.zshrc`) for persistence.
+  </Tab>
+
+  <Tab title="Windows">
+    ```cmd
+    set SEC_EDGAR_USER_AGENT="Your Name (name@domain.com)"
+    set SEC_EDGAR_CACHE_DIR="C:\sec-edgar-cache"
+    ```
+    
+    Or use PowerShell:
+    ```powershell
+    $env:SEC_EDGAR_USER_AGENT = "Your Name (name@domain.com)"
+    ```
+  </Tab>
+
+  <Tab title="Docker">
+    Pass environment variables to Docker:
+    ```bash
+    docker run -e SEC_EDGAR_USER_AGENT="Your Name (name@domain.com)" \\
+               -e SEC_EDGAR_CACHE_DIR="/cache" \\
+               stefanoamorelli/sec-edgar-mcp:latest
+    ```
+  </Tab>
+</Tabs>
+
+## MCP Client Configuration
+
+### Claude Desktop
+
+Add to `~/.config/claude-desktop/config.json`:
+
+<Tabs>
+  <Tab title="Docker">
+    ```json
+    {
+      "mcpServers": {
+        "sec-edgar-mcp": {
+          "command": "docker",
+          "args": [
+            "run",
+            "-i",
+            "--rm",
+            "-e",
+            "SEC_EDGAR_USER_AGENT=Your Name (name@domain.com)",
+            "stefanoamorelli/sec-edgar-mcp:latest"
+          ],
+          "env": {}
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```json
+    {
+      "mcpServers": {
+        "sec-edgar-mcp": {
+          "command": "python",
+          "args": ["-m", "sec_edgar_mcp.server"],
+          "env": {
+            "SEC_EDGAR_USER_AGENT": "Your Name (name@domain.com)"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Other MCP Clients
+
+The configuration format varies by client, but the core elements remain:
+
+- **Command**: How to start the server (`docker run...` or `python -m...`)
+- **Environment**: The `SEC_EDGAR_USER_AGENT` variable
+- **Transport**: Usually stdio (default)
+
+## Verification
+
+### Test Connection
+
+After installation and configuration:
+
+1. **Restart your MCP client**
+2. **Check for tool discovery** - You should see SEC Edgar tools available
+3. **Try a simple query**: Ask for a company's recent filings
+
+### Expected Tools
+
+Your MCP client should discover these tool categories:
+
+<CardGroup cols={2}>
+  <Card title="Company Tools" icon="building" color="#blue">
+    - lookup_company_cik
+    - get_company_info  
+    - get_company_facts
+  </Card>
+  <Card title="Filing Tools" icon="file-text" color="#green">
+    - get_recent_filings
+    - get_filing_content
+    - analyze_8k_filing
+  </Card>
+  <Card title="Financial Tools" icon="chart-bar" color="#orange">
+    - get_financial_statements
+    - extract_financial_data
+  </Card>
+  <Card title="Insider Tools" icon="user-tie" color="#purple">
+    - get_insider_transactions
+    - analyze_form_345
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Python Version Issues">
+    SEC Edgar MCP requires Python 3.11+. Check your version:
+    
+    ```bash
+    python --version
+    ```
+    
+    If you have multiple Python versions, you may need to use `python3.11` or similar.
+  </Accordion>
+
+  <Accordion title="Docker Permission Issues">
+    On Linux, you may need to add your user to the docker group:
+    
+    ```bash
+    sudo usermod -aG docker $USER
+    # Logout and login again
+    ```
+  </Accordion>
+
+  <Accordion title="Package Installation Failures">
+    Try updating pip and setuptools:
+    
+    ```bash
+    pip install --upgrade pip setuptools wheel
+    pip install sec-edgar-mcp
+    ```
+  </Accordion>
+
+  <Accordion title="MCP Client Not Finding Tools">
+    - Verify the JSON configuration syntax
+    - Check the MCP client logs
+    - Ensure the server starts without errors
+    - Restart the MCP client after configuration changes
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Quickstart Guide"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get up and running with your first queries
+  </Card>
+  <Card
+    title="Configuration"
+    icon="gear"
+    href="/setup/configuration"
+  >
+    Advanced configuration and customization
+  </Card>
+</CardGroup>

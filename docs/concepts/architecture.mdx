@@ -1,0 +1,26 @@
+---
+title: 'Architecture'
+description: 'SEC Edgar MCP system architecture and design'
+---
+
+## System Overview
+
+SEC Edgar MCP follows a modular architecture designed for reliability, performance, and maintainability.
+
+## Core Components
+
+### MCP Server Layer
+- **Tool Registration**: Discovers and registers all available tools
+- **Request Routing**: Routes requests to appropriate tool handlers
+- **Response Formatting**: Ensures consistent JSON response format
+
+### Data Access Layer  
+- **SEC API Client**: Handles SEC EDGAR REST API communication
+- **XBRL Parser**: Direct parsing of XBRL filing content
+- **Cache Manager**: Optimizes performance through intelligent caching
+
+### Tool Implementation
+- **Company Tools**: CIK lookup, company information, facts
+- **Filing Tools**: Recent filings, content extraction, analysis
+- **Financial Tools**: XBRL-based financial statement extraction
+- **Insider Tools**: Form 3/4/5 transaction analysis
