@@ -1,0 +1,266 @@
+---
+title: 'MCP Clients'
+description: 'Compatible MCP clients and configuration guides'
+---
+
+# MCP Clients
+
+SEC Edgar MCP works with any MCP-compatible client. Here's a comprehensive list of available clients and how to configure them.
+
+## Desktop Applications
+
+### Claude Desktop
+<Card title="Claude Desktop" icon="robot" href="https://claude.ai/download">
+  **Platform:** Windows, macOS, Linux  
+  **Type:** Official Anthropic desktop app  
+  **Best for:** Individual users, AI-powered research
+  
+  Claude Desktop is the most popular MCP client, providing direct integration with Claude AI for interactive financial analysis.
+
+  **Configuration file location:**
+  - **macOS/Linux:** `~/.config/claude-desktop/config.json`
+  - **Windows:** `%APPDATA%\Claude\claude-desktop\config.json`
+
+  ```json
+  {
+    "mcpServers": {
+      "sec-edgar-mcp": {
+        "command": "docker",
+        "args": [
+          "run", "-i", "--rm",
+          "-e", "SEC_EDGAR_USER_AGENT=Your Name (email@example.com)",
+          "stefanoamorelli/sec-edgar-mcp:latest"
+        ]
+      }
+    }
+  }
+  ```
+</Card>
+
+### Continue
+<Card title="Continue" icon="code" href="https://continue.dev">
+  **Platform:** VS Code, JetBrains IDEs  
+  **Type:** IDE extension  
+  **Best for:** Developers, code-integrated analysis
+  
+  Continue brings AI assistance directly to your IDE with MCP support for contextual coding help.
+
+  **Configuration:** Add to `.continue/config.json`:
+  ```json
+  {
+    "models": [...],
+    "mcpServers": {
+      "sec-edgar-mcp": {
+        "command": "uvx",
+        "args": [
+          "--from", "git+https://github.com/stefanoamorelli/sec-edgar-mcp.git",
+          "sec-edgar-mcp"
+        ],
+        "env": {
+          "SEC_EDGAR_USER_AGENT": "Your Name (email@example.com)"
+        }
+      }
+    }
+  }
+  ```
+</Card>
+
+### Cline (formerly Claude Dev)
+<Card title="Cline" icon="terminal" href="https://github.com/cline/cline">
+  **Platform:** VS Code  
+  **Type:** VS Code extension  
+  **Best for:** Autonomous coding tasks, file management
+  
+  Cline is an autonomous AI assistant that can create, edit, and execute code with human oversight.
+
+  **Configuration:** Through VS Code settings or `settings.json`:
+  ```json
+  {
+    "cline.mcpServers": {
+      "sec-edgar-mcp": {
+        "command": "python",
+        "args": ["-m", "sec_edgar_mcp.server"],
+        "env": {
+          "SEC_EDGAR_USER_AGENT": "Your Name (email@example.com)"
+        }
+      }
+    }
+  }
+  ```
+</Card>
+
+## Command Line Tools
+
+### MCP CLI
+<Card title="MCP CLI" icon="terminal" href="https://github.com/modelcontextprotocol/mcp-cli">
+  **Platform:** All platforms  
+  **Type:** Command-line interface  
+  **Best for:** Testing, debugging, automation
+  
+  Official command-line tool for testing and debugging MCP servers.
+
+  ```bash
+  # Install MCP CLI
+  npm install -g @modelcontextprotocol/cli
+
+  # Connect to SEC Edgar MCP
+  mcp connect "docker run -i --rm -e SEC_EDGAR_USER_AGENT='Test User (test@example.com)' stefanoamorelli/sec-edgar-mcp:latest"
+  
+  # List available tools
+  mcp tools list
+  
+  # Call a tool
+  mcp call lookup_company_cik '{"company_name": "Apple"}'
+  ```
+</Card>
+
+### MCP Client SDK
+<Card title="MCP Client SDK" icon="code" href="https://modelcontextprotocol.io/docs/concepts/clients">
+  **Platform:** Python, TypeScript/JavaScript  
+  **Type:** SDK for building custom clients  
+  **Best for:** Custom integrations, automation
+  
+  Build your own MCP client using official SDKs.
+
+  **Python example:**
+  ```python
+  from mcp import Client
+  import asyncio
+
+  async def main():
+      async with Client() as client:
+          # Connect to SEC Edgar MCP
+          await client.connect(
+              command="python",
+              args=["-m", "sec_edgar_mcp.server"],
+              env={"SEC_EDGAR_USER_AGENT": "Bot (bot@example.com)"}
+          )
+          
+          # List available tools
+          tools = await client.list_tools()
+          
+          # Call a tool
+          result = await client.call_tool(
+              "lookup_company_cik",
+              {"company_name": "Tesla"}
+          )
+          print(result)
+
+  asyncio.run(main())
+  ```
+</Card>
+
+## Web Applications
+
+### LibreChat
+<Card title="LibreChat" icon="message" href="https://github.com/danny-avila/LibreChat">
+  **Platform:** Web (self-hosted)  
+  **Type:** Multi-model chat interface  
+  **Best for:** Teams, self-hosted deployments
+  
+  Open-source AI chat platform with MCP support for multiple models.
+
+  **Configuration:** Add to `librechat.yaml`:
+  ```yaml
+  mcp:
+    servers:
+      sec-edgar:
+        command: docker
+        args:
+          - run
+          - -i
+          - --rm
+          - -e
+          - "SEC_EDGAR_USER_AGENT=LibreChat (admin@example.com)"
+          - stefanoamorelli/sec-edgar-mcp:latest
+  ```
+</Card>
+
+### Open WebUI
+<Card title="Open WebUI" icon="browser" href="https://github.com/open-webui/open-webui">
+  **Platform:** Web (self-hosted)  
+  **Type:** Web interface for LLMs  
+  **Best for:** Self-hosted AI assistants
+  
+  Feature-rich web UI for various LLMs with extensibility through tools and functions.
+
+  **Note:** MCP support is in development. Check their documentation for updates.
+</Card>
+
+## Mobile & Emerging Clients
+
+### Mobile MCP Clients
+<Note>
+  Mobile MCP clients are emerging. Check the [MCP ecosystem](https://modelcontextprotocol.io/ecosystem) for the latest mobile client developments.
+</Note>
+
+### Custom Integrations
+<Tip>
+  Any application can become an MCP client by implementing the [MCP protocol specification](https://modelcontextprotocol.io/specification). The protocol uses JSON-RPC 2.0 over stdio, SSE, or WebSocket transports.
+</Tip>
+
+## Configuration Best Practices
+
+<AccordionGroup>
+  <Accordion title="Environment Variables">
+    Always set the `SEC_EDGAR_USER_AGENT` with your actual name and email:
+    ```bash
+    SEC_EDGAR_USER_AGENT="John Doe (john.doe@company.com)"
+    ```
+    The SEC requires proper identification for API access.
+  </Accordion>
+
+  <Accordion title="Docker vs Direct Installation">
+    **Docker (Recommended):**
+    - Isolated environment
+    - No Python version conflicts
+    - Consistent across platforms
+    
+    **Direct Installation (pip/uvx):**
+    - Lower resource usage
+    - Faster startup time
+    - Easier debugging
+  </Accordion>
+
+  <Accordion title="Connection Testing">
+    After configuration, test your connection:
+    1. Restart your MCP client
+    2. Check if SEC Edgar tools are discovered
+    3. Try a simple query like company lookup
+    4. Verify tool responses include SEC URLs
+  </Accordion>
+
+  <Accordion title="Troubleshooting">
+    Common issues and solutions:
+    - **Tools not appearing:** Check JSON syntax and restart client
+    - **Connection errors:** Verify Docker is running or Python path is correct
+    - **SEC errors:** Ensure User-Agent includes valid email
+    - **Rate limiting:** Add delays between requests
+  </Accordion>
+</AccordionGroup>
+
+## Finding More Clients
+
+The MCP ecosystem is rapidly growing. Find the latest clients and tools:
+
+- [MCP Ecosystem Directory](https://modelcontextprotocol.io/ecosystem)
+- [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers)
+- [MCP GitHub Topics](https://github.com/topics/mcp)
+- [MCP Discord Community](https://discord.gg/modelcontextprotocol)
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration Guide" icon="gear" href="/setup/configuration">
+    Advanced configuration options
+  </Card>
+  <Card title="Docker Setup" icon="docker" href="/setup/docker">
+    Detailed Docker installation guide
+  </Card>
+  <Card title="Troubleshooting" icon="bug" href="/setup/troubleshooting">
+    Common issues and solutions
+  </Card>
+  <Card title="Tools Overview" icon="wrench" href="/tools/overview">
+    Explore available SEC Edgar tools
+  </Card>
+</CardGroup>
