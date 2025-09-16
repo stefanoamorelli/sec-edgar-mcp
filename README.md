@@ -14,6 +14,7 @@ mcp-name: io.github.stefanoamorelli/sec-edgar-mcp
   <a href="https://pypi.org/project/sec-edgar-mcp/"><img alt="PyPI" src="https://img.shields.io/pypi/v/sec-edgar-mcp.svg" /></a>
   <a href="https://anaconda.org/stefanoamorelli/sec-edgar-mcp"><img alt="Conda Version" src="https://img.shields.io/conda/vn/stefanoamorelli/sec-edgar-mcp.svg" /></a>
   <a href="https://mseep.ai/app/0132880c-5e83-410b-a1d5-d3df08ed7b5c"><img alt="Verified on MseeP" src="https://mseep.ai/badge.svg" /></a>
+  <a href="https://doi.org/10.5281/zenodo.17123166"><img alt="DOI" src="https://zenodo.org/badge/DOI/10.5281/zenodo.17123166.svg" /></a>
 </p>
 
 https://github.com/user-attachments/assets/d310eb42-b3ca-467d-92f7-7d132e6274fe
@@ -28,9 +29,26 @@ SEC EDGAR MCP is an open-source MCP server that connects AI models to the rich d
 Using the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) – an open standard that "enables seamless integration between LLM applications and external data sources and tools" – the SEC EDGAR MCP server exposes a comprehensive set of tools for accessing SEC filing data. Under the hood, it leverages the [EdgarTools Python library](https://github.com/dgunning/edgartools) to fetch data from official SEC sources and performs direct XBRL parsing for exact financial precision. This means an AI agent can ask questions like "What's the latest 10-K filing for Apple?" or "Show me Tesla's exact revenue from their latest 10-K" and the MCP server will retrieve the answer directly from EDGAR's official data with complete accuracy and filing references.
 
 > [!TIP]
-> If you use this software, please cite it following [CITATION.cff](CITATION.cff), or the following APA entry:
-
-`Amorelli, Stefano (2025). SEC EDGAR MCP (Model Context Protocol) Server [Computer software]. GitHub. https://github.com/stefanoamorelli/sec-edgar-mcp`
+> If you use this software, please cite it using the DOI below or following [CITATION.cff](CITATION.cff):
+>
+> [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17123166.svg)](https://doi.org/10.5281/zenodo.17123166)
+>
+> **APA Citation:**
+>
+> Amorelli, S. (2025). *SEC EDGAR MCP (Model Context Protocol) Server* (Version 1.0.6) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.17123166
+>
+> **BibTeX:**
+> ```bibtex
+> @software{amorelli_sec_edgar_mcp_2025,
+>   title = {{SEC EDGAR MCP (Model Context Protocol) Server}},
+>   author = {Amorelli, Stefano},
+>   version = {1.0.6},
+>   year = {2025},
+>   month = {9},
+>   url = {https://doi.org/10.5281/zenodo.17123166},
+>   doi = {10.5281/zenodo.17123166}
+> }
+> ```
 
 ## Usage 🚀
 

@@ -5,6 +5,9 @@ authors:
     given-names: Stefano
     orcid: "https://orcid.org/0009-0004-4917-0999"
 title: "SEC EDGAR MCP (Model Context Protocol) Server"
-version: 1.0.0-alpha
-date-released: 2025-04-06
+version: 1.0.6
+doi: 10.5281/zenodo.17123166
+date-released: 2025-09-15
 url: https://github.com/stefanoamorelli/sec-edgar-mcp
+repository-code: https://github.com/stefanoamorelli/sec-edgar-mcp
+license: AGPL-3.0
