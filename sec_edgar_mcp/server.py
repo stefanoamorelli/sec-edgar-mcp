@@ -1,6 +1,10 @@
 import argparse
+import logging
 from mcp.server.fastmcp import FastMCP
 from sec_edgar_mcp.tools import CompanyTools, FilingsTools, FinancialTools, InsiderTools
+
+# Suppress INFO logs from edgar library
+logging.getLogger("edgar").setLevel(logging.WARNING)
 
 
 # Initialize MCP server
