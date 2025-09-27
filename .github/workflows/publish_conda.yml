@@ -3,14 +3,48 @@ name: Build and publish to Conda
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      test_version:
+        description: 'Test version (e.g., 1.0.0.test1)'
+        required: true
+        default: '1.0.0.test1'
+      test_channel:
+        description: 'Anaconda channel label (leave empty for main)'
+        required: false
+        default: 'test'
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - name: publish-to-conda
-        uses: stefanoamorelli/conda-package-publish-action@v3-hotfix
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
         with:
-          subDir: "conda"
-          anacondaToken: ${{ secrets.ANACONDA_TOKEN }}
+          miniconda-version: "latest"
+          channels: conda-forge,defaults
+          channel-priority: strict
+      - shell: bash -l {0}
+        run: |
+          conda install conda-build anaconda-client -c conda-forge
+          
+          # Set version - from release tag or workflow input
+          if [ "${{ github.event_name }}" = "release" ]; then
+            export GIT_DESCRIBE_TAG=${GITHUB_REF#refs/tags/v}
+            CHANNEL_LABEL=""
+          else
+            # Convert test version format for conda (no hyphens allowed)
+            TEST_VERSION="${{ github.event.inputs.test_version }}"
+            export GIT_DESCRIBE_TAG=$(echo "$TEST_VERSION" | sed 's/-/./')
+            CHANNEL_LABEL="${{ github.event.inputs.test_channel }}"
+          fi
+          
+          echo "Building version: $GIT_DESCRIBE_TAG"
+          conda build conda/ --no-anaconda-upload
+          
+          # Upload with appropriate channel label
+          if [ -z "$CHANNEL_LABEL" ]; then
+            anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload $(conda build conda/ --output) --force
+          else
+            anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload $(conda build conda/ --output) --force --label $CHANNEL_LABEL
+          fi
