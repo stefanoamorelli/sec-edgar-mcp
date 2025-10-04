@@ -1,36 +1,20 @@
 from typing import Optional
-from sec_edgar_toolkit.core.global_functions import set_identity, find_company, search
-from sec_edgar_toolkit import Company as SECCompany
+from edgar import Company, set_identity, find_company, search
 from ..utils.cache import TickerCache
 from ..utils.exceptions import CompanyNotFoundError
 from ..config import initialize_config
-from .filing_wrapper import wrap_filings
-
-
-class Company(SECCompany):
-    """Extended Company class with additional methods."""
-
-    def get_filings(self, form=None, **kwargs):
-        """Get filings with .latest() support."""
-        filings = super().get_filings(form=form, **kwargs)
-        return wrap_filings(filings)
-
-    def get_facts(self):
-        """Compatibility wrapper for get_company_facts."""
-        # sec-edgar-toolkit uses get_company_facts instead of get_facts
-        if hasattr(self, "get_company_facts"):
-            return self.get_company_facts()
-        # Fallback to original if it exists
-        return super().get_facts() if hasattr(super(), "get_facts") else None
+import edgar
 
 
 class EdgarClient:
-    """Wrapper around sec-edgar-toolkit for consistent API access."""
+    """Wrapper around edgar-tools for consistent API access."""
 
     def __init__(self):
         self._user_agent = initialize_config()
-        # Set identity for sec-edgar-toolkit
+        # Set identity for edgar-tools
         set_identity(self._user_agent)
+        # Also set the default user agent
+        edgar.set_identity(self._user_agent)
         self._ticker_cache = TickerCache(self._user_agent)
 
     def get_company(self, identifier: str) -> Company:
@@ -67,7 +51,7 @@ class EdgarClient:
     def search_companies(self, query: str, limit: int = 10) -> list:
         """Search for companies by name."""
         try:
-            # Use sec-edgar-toolkit search functionality
+            # Use edgar-tools search functionality
             results = search(query)
 
             # Convert to list format and limit results

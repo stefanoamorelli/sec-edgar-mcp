@@ -6,6 +6,7 @@ from sec_edgar_mcp.tools import CompanyTools, FilingsTools, FinancialTools, Insi
 # Suppress INFO logs from edgar library
 logging.getLogger("edgar").setLevel(logging.WARNING)
 
+
 # Add system-wide instructions for deterministic responses
 DETERMINISTIC_INSTRUCTIONS = """
 CRITICAL: When responding to SEC filing data requests, you MUST follow these rules:

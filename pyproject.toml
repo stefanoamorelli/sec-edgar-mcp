@@ -15,7 +15,7 @@ classifiers = [
   "License :: OSI Approved :: GNU Affero General Public License v3",
   "Operating System :: OS Independent",
 ]
-dependencies = ["mcp[cli]>=1.7.1", "sec-edgar-toolkit>=0.1.0", "requests>=2.31.0"]
+dependencies = ["mcp[cli]>=1.7.1", "edgartools>=4.4.0", "requests>=2.31.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
