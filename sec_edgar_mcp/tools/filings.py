@@ -1,7 +1,8 @@
 from typing import Dict, Union, List, Optional, Any
 from datetime import datetime
-from edgar import get_filings
+from sec_edgar_toolkit.core.global_functions import get_filings as sec_get_filings
 from ..core.client import EdgarClient
+from ..core.filing_wrapper import wrap_filings
 from ..core.models import FilingInfo
 from ..utils.exceptions import FilingNotFoundError
 from .types import ToolResponse
@@ -27,8 +28,8 @@ class FilingsTools:
                 company = self.client.get_company(identifier)
                 filings = company.get_filings(form=form_type)
             else:
-                # Global filings using edgar-tools get_filings()
-                filings = get_filings(form=form_type, count=limit)
+                # Global filings using sec-edgar-toolkit get_filings()
+                filings = wrap_filings(sec_get_filings(form=form_type, limit=limit))
 
             # Limit results
             filings_list = []
