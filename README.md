@@ -79,6 +79,9 @@ To use SEC EDGAR MCP with Docker, add the following configuration to your MCP cl
 }
 ```
 
+> [!NOTE]
+> The `-i` flag is required to keep STDIN open in interactive mode, which is essential for MCP servers to receive JSON-RPC messages from the client.
+
 **Demo**: Here's a demonstration of an AI assistant using SEC EDGAR MCP to retrieve Apple's latest filings and financial facts (click to view the video):
 
 <div align="center">
