@@ -60,7 +60,8 @@
     }
   ],
   "footerSocials": {
-    "github": "https://github.com/stefanoamorelli/sec-edgar-mcp"
+    "github": "https://github.com/stefanoamorelli/sec-edgar-mcp",
+    "linkedin": "https://www.linkedin.com/in/stefanoamorelli/"
   },
   "feedback": {
     "thumbsRating": true,
