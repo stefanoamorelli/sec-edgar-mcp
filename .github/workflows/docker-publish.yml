@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+  IMAGE_NAME: stefanoamorelli/sec-edgar-mcp
 
 jobs:
   build-and-push:
