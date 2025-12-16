@@ -121,9 +121,7 @@ class FinancialTools(BaseTools):
         except Exception as e:
             return {"success": False, "error": f"Failed to get key metrics: {e}"}
 
-    def compare_periods(
-        self, identifier: str, metric: str, start_year: int, end_year: int
-    ) -> ToolResponse:
+    def compare_periods(self, identifier: str, metric: str, start_year: int, end_year: int) -> ToolResponse:
         """Compare a financial metric across periods."""
         try:
             company = self.client.get_company(identifier)
@@ -181,7 +179,9 @@ class FinancialTools(BaseTools):
             filing = self._get_filing(company, accession_number, form_type)
 
             if not filing:
-                error_msg = f"Filing {accession_number} not found" if accession_number else f"No {form_type} filings found"
+                error_msg = (
+                    f"Filing {accession_number} not found" if accession_number else f"No {form_type} filings found"
+                )
                 return {"success": False, "error": error_msg}
 
             xbrl = filing.xbrl()
@@ -225,7 +225,9 @@ class FinancialTools(BaseTools):
             filing = self._get_filing(company, accession_number, form_type)
 
             if not filing:
-                error_msg = f"Filing {accession_number} not found" if accession_number else f"No {form_type} filings found"
+                error_msg = (
+                    f"Filing {accession_number} not found" if accession_number else f"No {form_type} filings found"
+                )
                 return {"success": False, "error": error_msg}
 
             xbrl = filing.xbrl()
@@ -391,13 +393,15 @@ class FinancialTools(BaseTools):
             try:
                 year = int(row.get("fy", 0))
                 if start_year <= year <= end_year:
-                    period_data.append({
-                        "year": year,
-                        "period": row.get("fp", ""),
-                        "value": float(row.get("value", 0)),
-                        "unit": row.get("unit", "USD"),
-                        "form": row.get("form", ""),
-                    })
+                    period_data.append(
+                        {
+                            "year": year,
+                            "period": row.get("fp", ""),
+                            "value": float(row.get("value", 0)),
+                            "unit": row.get("unit", "USD"),
+                            "form": row.get("form", ""),
+                        }
+                    )
             except Exception:
                 continue
         period_data.sort(key=lambda x: x["year"])
@@ -470,11 +474,13 @@ class FinancialTools(BaseTools):
                 fact_data = facts.get_fact(fact_name)
                 if fact_data is not None and not fact_data.empty:
                     if not search_term or search_term.lower() in fact_name.lower():
-                        available_facts.append({
-                            "name": fact_name,
-                            "count": len(fact_data),
-                            "latest_period": fact_data.iloc[-1].get("end", "") if not fact_data.empty else None,
-                        })
+                        available_facts.append(
+                            {
+                                "name": fact_name,
+                                "count": len(fact_data),
+                                "latest_period": fact_data.iloc[-1].get("end", "") if not fact_data.empty else None,
+                            }
+                        )
             except Exception:
                 continue
 

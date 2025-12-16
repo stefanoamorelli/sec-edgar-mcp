@@ -44,10 +44,7 @@ class CompanyTools(BaseTools):
         """Search for companies by name."""
         try:
             results = self.client.search_companies(query, limit)
-            companies = [
-                {"cik": r.cik, "name": r.name, "tickers": getattr(r, "tickers", [])}
-                for r in results
-            ]
+            companies = [{"cik": r.cik, "name": r.name, "tickers": getattr(r, "tickers", [])} for r in results]
             return {"success": True, "companies": companies, "count": len(companies)}
         except Exception as e:
             return {"success": False, "error": f"Failed to search companies: {e}"}

@@ -79,9 +79,7 @@ class FilingsTools(BaseTools):
         except Exception as e:
             return {"success": False, "error": f"Failed to analyze 8-K: {e}"}
 
-    def get_filing_sections(
-        self, identifier: str, accession_number: str, form_type: str
-    ) -> ToolResponse:
+    def get_filing_sections(self, identifier: str, accession_number: str, form_type: str) -> ToolResponse:
         """Get specific sections from a filing."""
         try:
             company = self.client.get_company(identifier)
@@ -127,9 +125,7 @@ class FilingsTools(BaseTools):
 
         if hasattr(eightk, "date_of_report"):
             try:
-                analysis["date_of_report"] = datetime.strptime(
-                    eightk.date_of_report, "%B %d, %Y"
-                ).isoformat()
+                analysis["date_of_report"] = datetime.strptime(eightk.date_of_report, "%B %d, %Y").isoformat()
             except (ValueError, TypeError):
                 pass
 

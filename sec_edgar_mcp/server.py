@@ -436,7 +436,12 @@ FORM_RECOMMENDATIONS = {
         ],
     },
     "4": {
-        "tools": ["get_insider_transactions", "analyze_form4_transactions", "get_form4_details", "analyze_insider_sentiment"],
+        "tools": [
+            "get_insider_transactions",
+            "analyze_form4_transactions",
+            "get_form4_details",
+            "analyze_insider_sentiment",
+        ],
         "description": "Statement of changes in beneficial ownership",
         "tips": [
             "Use get_insider_transactions for activity overview",
