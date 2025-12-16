@@ -1,36 +1,29 @@
-from ..core.client import EdgarClient
+"""Company-related tools for SEC EDGAR data."""
+
+from typing import Any, Dict
+
 from ..core.models import CompanyInfo
 from ..utils.exceptions import CompanyNotFoundError
-from .types import ToolResponse
+from .base import BaseTools, ToolResponse
 
 
-class CompanyTools:
-    """Tools for company-related operations."""
-
-    def __init__(self):
-        self.client = EdgarClient()
+class CompanyTools(BaseTools):
+    """Tools for retrieving company information from SEC EDGAR."""
 
     def get_cik_by_ticker(self, ticker: str) -> ToolResponse:
-        """Get the CIK for a company based on its ticker symbol."""
+        """Convert ticker symbol to CIK."""
         try:
             cik = self.client.get_cik_by_ticker(ticker)
             if cik:
-                return {
-                    "success": True,
-                    "cik": cik,
-                    "ticker": ticker.upper(),
-                    "suggestion": f"Use CIK '{cik}' instead of ticker '{ticker}' for more reliable and faster API calls",
-                }
-            else:
-                return {"success": False, "error": f"CIK not found for ticker: {ticker}"}
+                return {"success": True, "cik": cik, "ticker": ticker.upper()}
+            return {"success": False, "error": f"CIK not found for ticker: {ticker}"}
         except Exception as e:
             return {"success": False, "error": str(e)}
 
     def get_company_info(self, identifier: str) -> ToolResponse:
-        """Get detailed company information."""
+        """Get detailed company information from SEC records."""
         try:
             company = self.client.get_company(identifier)
-
             info = CompanyInfo(
                 cik=company.cik,
                 name=company.name,
@@ -41,81 +34,31 @@ class CompanyTools:
                 state=getattr(company, "state", None),
                 fiscal_year_end=getattr(company, "fiscal_year_end", None),
             )
-
             return {"success": True, "company": info.to_dict()}
         except CompanyNotFoundError as e:
             return {"success": False, "error": str(e)}
         except Exception as e:
-            return {"success": False, "error": f"Failed to get company info: {str(e)}"}
+            return {"success": False, "error": f"Failed to get company info: {e}"}
 
     def search_companies(self, query: str, limit: int = 10) -> ToolResponse:
         """Search for companies by name."""
         try:
             results = self.client.search_companies(query, limit)
-
-            companies = []
-            for result in results:
-                companies.append({"cik": result.cik, "name": result.name, "tickers": getattr(result, "tickers", [])})
-
+            companies = [{"cik": r.cik, "name": r.name, "tickers": getattr(r, "tickers", [])} for r in results]
             return {"success": True, "companies": companies, "count": len(companies)}
         except Exception as e:
-            return {"success": False, "error": f"Failed to search companies: {str(e)}"}
+            return {"success": False, "error": f"Failed to search companies: {e}"}
 
     def get_company_facts(self, identifier: str) -> ToolResponse:
-        """Get company facts and financial data."""
+        """Get company facts and financial data from XBRL."""
         try:
             company = self.client.get_company(identifier)
-
-            # Get company facts using edgar-tools
             facts = company.get_facts()
 
             if not facts:
                 return {"success": False, "error": "No facts available for this company"}
 
-            # Extract key financial metrics
-            metrics = {}
-
-            # Try to access the raw facts data
-            if hasattr(facts, "data"):
-                facts_data = facts.data
-
-                # Look for US-GAAP facts
-                if "us-gaap" in facts_data:
-                    gaap_facts = facts_data["us-gaap"]
-
-                    # Common metrics to extract
-                    metric_names = [
-                        "Assets",
-                        "Liabilities",
-                        "StockholdersEquity",
-                        "Revenues",
-                        "NetIncomeLoss",
-                        "EarningsPerShareBasic",
-                        "CashAndCashEquivalents",
-                        "CommonStockSharesOutstanding",
-                    ]
-
-                    for metric in metric_names:
-                        if metric in gaap_facts:
-                            metric_data = gaap_facts[metric]
-                            if "units" in metric_data:
-                                # Get the most recent value
-                                for unit_type, unit_data in metric_data["units"].items():
-                                    if unit_data:
-                                        # Sort by end date and get the latest
-                                        sorted_data = sorted(unit_data, key=lambda x: x.get("end", ""), reverse=True)
-                                        if sorted_data:
-                                            latest = sorted_data[0]
-                                            metrics[metric] = {
-                                                "value": float(latest.get("val", 0)),
-                                                "unit": unit_type,
-                                                "period": latest.get("end", ""),
-                                                "form": latest.get("form", ""),
-                                                "fiscal_year": latest.get("fy", ""),
-                                                "fiscal_period": latest.get("fp", ""),
-                                            }
-                                            break
-
+            metrics = self._extract_metrics(facts)
             return {
                 "success": True,
                 "cik": company.cik,
@@ -124,4 +67,54 @@ class CompanyTools:
                 "has_facts": bool(facts),
             }
         except Exception as e:
-            return {"success": False, "error": f"Failed to get company facts: {str(e)}"}
+            return {"success": False, "error": f"Failed to get company facts: {e}"}
+
+    def _extract_metrics(self, facts) -> Dict[str, Any]:
+        """Extract key financial metrics from company facts."""
+        metrics: Dict[str, Any] = {}
+
+        if not hasattr(facts, "data"):
+            return metrics
+
+        facts_data = facts.data
+        if "us-gaap" not in facts_data:
+            return metrics
+
+        gaap_facts = facts_data["us-gaap"]
+        metric_names = [
+            "Assets",
+            "Liabilities",
+            "StockholdersEquity",
+            "Revenues",
+            "NetIncomeLoss",
+            "EarningsPerShareBasic",
+            "CashAndCashEquivalents",
+            "CommonStockSharesOutstanding",
+        ]
+
+        for metric in metric_names:
+            if metric not in gaap_facts:
+                continue
+
+            metric_data = gaap_facts[metric]
+            if "units" not in metric_data:
+                continue
+
+            for unit_type, unit_data in metric_data["units"].items():
+                if not unit_data:
+                    continue
+
+                sorted_data = sorted(unit_data, key=lambda x: x.get("end", ""), reverse=True)
+                if sorted_data:
+                    latest = sorted_data[0]
+                    metrics[metric] = {
+                        "value": float(latest.get("val", 0)),
+                        "unit": unit_type,
+                        "period": latest.get("end", ""),
+                        "form": latest.get("form", ""),
+                        "fiscal_year": latest.get("fy", ""),
+                        "fiscal_period": latest.get("fp", ""),
+                    }
+                    break
+
+        return metrics
