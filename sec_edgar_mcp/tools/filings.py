@@ -1,6 +1,6 @@
 from typing import Dict, Union, List, Optional, Any
 from datetime import datetime
-from edgar import get_filings
+from edgar import get_current_filings
 from ..core.client import EdgarClient
 from ..core.models import FilingInfo
 from ..utils.exceptions import FilingNotFoundError
@@ -18,7 +18,7 @@ class FilingsTools:
         identifier: Optional[str] = None,
         form_type: Optional[Union[str, List[str]]] = None,
         days: int = 30,
-        limit: int = 50,
+        limit: int = 40,
     ) -> ToolResponse:
         """Get recent filings for a company or across all companies."""
         try:
@@ -27,8 +27,8 @@ class FilingsTools:
                 company = self.client.get_company(identifier)
                 filings = company.get_filings(form=form_type)
             else:
-                # Global filings using edgar-tools get_filings()
-                filings = get_filings(form=form_type, count=limit)
+                # Global filings using edgar-tools get_current_filings()
+                filings = get_current_filings(form=form_type, page_size=limit)
 
             # Limit results
             filings_list = []

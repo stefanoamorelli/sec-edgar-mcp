@@ -106,7 +106,7 @@ def get_company_facts(identifier: str):
 
 
 # Filing Tools
-def get_recent_filings(identifier: str = None, form_type: str = None, days: int = 30, limit: int = 50):
+def get_recent_filings(identifier: str = None, form_type: str = None, days: int = 30, limit: int = 40):
     """
     Get recent SEC filings for a company or across all companies.
 
