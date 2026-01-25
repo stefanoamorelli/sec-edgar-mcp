@@ -1,5 +1,5 @@
 {% set name = "sec-edgar-mcp" %}
-{% set version = environ.get('GIT_DESCRIBE_TAG', '1.0.5').lstrip('v') %}
+{% set version = environ.get('GIT_DESCRIBE_TAG', '1.0.8').lstrip('v') %}
 
 package:
   name: {{ name|lower }}

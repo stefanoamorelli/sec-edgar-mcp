@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sec-edgar-mcp"
-version = "1.0.7"
+version = "1.0.8"
 description = "SEC EDGAR MCP server for company filings and financial data"
 authors = [{ name = "Stefano Amorelli", email = "stefano@amorelli.tech" }]
 readme = "README.md"
