@@ -312,34 +312,103 @@ class FinancialTools:
         else:
             return str(statement)
 
-    def get_segment_data(self, identifier: str, segment_type: str = "geographic") -> ToolResponse:
-        """Get segment revenue breakdown."""
+    def get_segment_data(self, identifier: str, segment_type: str = "business") -> ToolResponse:
+        """Get segment revenue breakdown from XBRL data."""
         try:
             company = self.client.get_company(identifier)
 
-            # Get the latest 10-K
             filing = company.get_filings(form="10-K").latest()
             if not filing:
                 return {"success": False, "error": "No 10-K filings found"}
 
-            # Get the filing object
-            tenk = filing.obj()
+            xbrl = filing.xbrl()
+            if not xbrl:
+                return {"success": False, "error": "No XBRL data found in filing"}
 
-            segments = {}
+            segments: dict[str, dict[str, dict[str, str | int | float]]] = {
+                "revenue": {},
+                "cost_of_revenue": {},
+                "operating_income": {},
+                "operating_expenses": {},
+            }
+            segment_statements = []
 
-            # Try to extract segment data from financials
-            try:
-                financials = company.get_financials()
-                if financials and hasattr(financials, "get_segment_data"):
-                    segment_data = financials.get_segment_data(segment_type)
-                    if segment_data:
-                        segments = segment_data.to_dict(orient="records")
-            except Exception:
-                pass
+            all_statements = xbrl.get_all_statements()
+            for stmt_info in all_statements:
+                definition = stmt_info.get("definition", "")
+                if "segment" in definition.lower() and "detail" in definition.lower():
+                    segment_statements.append(stmt_info)
 
-            # If no segment data from financials, try to extract from filing text
-            if not segments and hasattr(tenk, "segments"):
-                segments = {"from_filing": True, "data": str(tenk.segments)[:10000]}
+            for stmt_info in segment_statements:
+                role = stmt_info.get("role")
+                if not role:
+                    continue
+
+                try:
+                    stmt_data = xbrl.get_statement(role)
+                    if not stmt_data:
+                        continue
+
+                    for item in stmt_data:
+                        if not item.get("has_values"):
+                            continue
+
+                        values = item.get("values", {})
+                        if not values:
+                            continue
+
+                        label = item.get("label", "Unknown")
+                        concept = item.get("concept", "")
+
+                        sorted_periods = sorted(values.keys(), reverse=True)
+                        latest_period = sorted_periods[0]
+                        value = values[latest_period]
+
+                        if not isinstance(value, (int, float)):
+                            continue
+
+                        units = item.get("units", {})
+                        unit = units.get(latest_period, "USD")
+
+                        entry = {"value": value, "unit": unit, "period": latest_period}
+
+                        concept_lower = concept.lower()
+                        if "costofgoodsandservices" in concept_lower or "costofrevenue" in concept_lower:
+                            segments["cost_of_revenue"][label] = entry
+                        elif "operatingincome" in concept_lower:
+                            segments["operating_income"][label] = entry
+                        elif "operatingexpense" in concept_lower:
+                            segments["operating_expenses"][label] = entry
+                        elif "revenue" in concept_lower:
+                            segments["revenue"][label] = entry
+
+                except Exception:
+                    continue
+
+            if segment_type == "geographic":
+                geographic_keywords = [
+                    "united states",
+                    "other countries",
+                    "foreign",
+                    "domestic",
+                    "americas",
+                    "europe",
+                    "asia",
+                    "china",
+                    "japan",
+                    "emea",
+                    "apac",
+                    "international",
+                    "region",
+                ]
+                for category in segments:
+                    segments[category] = {
+                        k: v
+                        for k, v in segments[category].items()
+                        if any(kw in k.lower() for kw in geographic_keywords)
+                    }
+
+            segments = {k: v for k, v in segments.items() if v}
 
             return {
                 "success": True,
@@ -348,6 +417,7 @@ class FinancialTools:
                 "segment_type": segment_type,
                 "segments": segments,
                 "filing_date": filing.filing_date.isoformat(),
+                "statements_found": len(segment_statements),
             }
         except Exception as e:
             return {"success": False, "error": f"Failed to get segment data: {str(e)}"}
