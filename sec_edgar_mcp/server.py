@@ -122,18 +122,20 @@ def get_recent_filings(identifier: str = None, form_type: str = None, days: int 
     return filings_tools.get_recent_filings(identifier, form_type, days, limit)
 
 
-def get_filing_content(identifier: str, accession_number: str):
+def get_filing_content(identifier: str, accession_number: str, offset: int = 0, max_chars: int = 50000):
     """
-    Get the content of a specific SEC filing.
+    Get the content of a specific SEC filing with paging support.
 
     Args:
         identifier: Company ticker symbol or CIK number
         accession_number: The accession number of the filing
+        offset: Character offset into the filing content (default: 0)
+        max_chars: Maximum number of characters to return (default: 50000)
 
     Returns:
-        Dictionary containing filing content and metadata
+        Dictionary containing filing content page and pagination metadata
     """
-    return filings_tools.get_filing_content(identifier, accession_number)
+    return filings_tools.get_filing_content(identifier, accession_number, offset, max_chars)
 
 
 def analyze_8k(identifier: str, accession_number: str):
