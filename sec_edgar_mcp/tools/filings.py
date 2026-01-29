@@ -65,8 +65,14 @@ class FilingsTools:
         except Exception as e:
             return {"success": False, "error": f"Failed to get recent filings: {str(e)}"}
 
-    def get_filing_content(self, identifier: str, accession_number: str) -> ToolResponse:
-        """Get the content of a specific filing."""
+    def get_filing_content(
+        self,
+        identifier: str,
+        accession_number: str,
+        offset: int = 0,
+        max_chars: int = 50000,
+    ) -> ToolResponse:
+        """Get filing content with paging support."""
         try:
             company = self.client.get_company(identifier)
 
@@ -80,34 +86,32 @@ class FilingsTools:
             if not filing:
                 raise FilingNotFoundError(f"Filing {accession_number} not found")
 
-            # Get filing content
             content = filing.text()
+            total_chars = len(content)
 
-            # For structured filings, get the data object
-            filing_data = {}
-            try:
-                obj = filing.obj()
-                if obj:
-                    # Extract key information based on filing type
-                    if filing.form == "8-K" and hasattr(obj, "items"):
-                        filing_data["items"] = obj.items
-                        filing_data["has_press_release"] = getattr(obj, "has_press_release", False)
-                    elif filing.form in ["10-K", "10-Q"]:
-                        filing_data["has_financials"] = True
-                    elif filing.form in ["3", "4", "5"]:
-                        filing_data["is_ownership"] = True
-            except Exception:
-                pass
+            safe_offset = max(0, int(offset))
+            safe_max_chars = int(max_chars) if max_chars and int(max_chars) > 0 else 50000
+
+            page_end = min(safe_offset + safe_max_chars, total_chars)
+            if safe_offset >= total_chars:
+                page_content = ""
+                page_end = total_chars
+            else:
+                page_content = content[safe_offset:page_end]
+
+            next_offset = page_end if page_end < total_chars else None
 
             return {
                 "success": True,
                 "accession_number": filing.accession_number,
                 "form_type": filing.form,
                 "filing_date": filing.filing_date.isoformat(),
-                "content": content[:50000] if len(content) > 50000 else content,  # Limit size
-                "content_truncated": len(content) > 50000,
-                "filing_data": filing_data,
+                "content": page_content,
                 "url": filing.url,
+                "offset": safe_offset,
+                "returned_chars": len(page_content),
+                "total_chars": total_chars,
+                "next_offset": next_offset,
             }
         except FilingNotFoundError as e:
             return {"success": False, "error": str(e)}
