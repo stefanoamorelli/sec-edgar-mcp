@@ -1,0 +1,61 @@
+name: Evals
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sec_edgar_mcp/**'
+      - 'evals/**'
+      - '.github/workflows/evals.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'sec_edgar_mcp/**'
+      - 'evals/**'
+      - '.github/workflows/evals.yml'
+  schedule:
+    - cron: '0 6 * * 1' # Weekly on Monday at 6:00 UTC
+  workflow_dispatch:
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install -e .
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install eval dependencies
+        working-directory: evals
+        run: pnpm install
+
+      - name: Run promptfoo evals
+        working-directory: evals
+        env:
+          SEC_EDGAR_USER_AGENT: 'SEC-EDGAR-MCP-Evals stefano+sec-edgar-mcp-evals@amorelli.tech'
+        run: npx promptfoo eval -c promptfooconfig.yaml --no-progress-bar -o output.json --repeat 1
+
+      - name: Upload eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: evals/output.json

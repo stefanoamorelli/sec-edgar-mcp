@@ -1,0 +1,36 @@
+{
+  "name": "sec-edgar-mcp-evals",
+  "version": "1.0.0",
+  "description": "Promptfoo evaluations for SEC EDGAR MCP Server",
+  "private": true,
+  "author": "Stefano Amorelli <stefano@amorelli.tech>",
+  "license": "AGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stefanoamorelli/sec-edgar-mcp"
+  },
+  "scripts": {
+    "eval": "npm run eval:company && npm run eval:filings && npm run eval:financial && npm run eval:insider && npm run eval:determinism && npm run eval:error",
+    "eval:company": "promptfoo eval -c promptfooconfig.yaml --filter-pattern 'company-*'",
+    "eval:filings": "promptfoo eval -c promptfooconfig.yaml --filter-pattern 'filings-*'",
+    "eval:financial": "promptfoo eval -c promptfooconfig.yaml --filter-pattern 'financial-*'",
+    "eval:insider": "promptfoo eval -c promptfooconfig.yaml --filter-pattern 'insider-*'",
+    "eval:determinism": "promptfoo eval -c promptfooconfig.yaml --filter-pattern 'determinism-*'",
+    "eval:error": "promptfoo eval -c promptfooconfig.yaml --filter-pattern 'error-*'",
+    "view": "promptfoo view",
+    "cache:clear": "promptfoo cache clear"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "@swc/core",
+      "protobufjs",
+      "promptfoo",
+      "sharp"
+    ]
+  },
+  "devDependencies": {
+    "promptfoo": "^0.120.4"
+  }
+}
