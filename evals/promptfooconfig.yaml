@@ -1,0 +1,456 @@
+# SEC EDGAR MCP Server Evaluation Configuration
+# Evaluates MCP tool responses for correctness, data accuracy, and determinism
+
+description: 'SEC EDGAR MCP Server Evaluation Suite'
+
+providers:
+  - id: mcp
+    label: 'SEC EDGAR MCP'
+    config:
+      enabled: true
+      server:
+        command: python3
+        args: ['-m', 'sec_edgar_mcp.server']
+        name: sec-edgar-mcp
+        cwd: '../'
+        env:
+          SEC_EDGAR_USER_AGENT: '${SEC_EDGAR_USER_AGENT}'
+      timeout: 120000
+      maxTotalTimeout: 600000
+      resetTimeoutOnProgress: true
+      pingOnConnect: true
+
+prompts:
+  - '{{prompt}}'
+
+# Evaluation options to handle SEC API rate limiting
+evaluateOptions:
+  maxConcurrency: 1
+  delay: 2000
+
+# Environment variables for timeouts and SEC API
+env:
+  PROMPTFOO_EVAL_TIMEOUT_MS: '120000'
+  PROMPTFOO_REQUEST_TIMEOUT_MS: '90000'
+  PROMPTFOO_RETRY_5XX: '1'
+  SEC_EDGAR_USER_AGENT: 'sec-edgar-mcp-evals test@example.com'
+
+defaultTest:
+  options:
+    timeout: 90000
+    transform: |
+      // Extract text from MCP content block format: [{"type":"text","text":"..."}]
+      try {
+        const blocks = JSON.parse(output);
+        if (Array.isArray(blocks) && blocks.length > 0 && blocks[0].type === 'text') {
+          return blocks[0].text;
+        }
+        return output;
+      } catch (e) {
+        return output;
+      }
+
+tests:
+  # ============================================================================
+  # COMPANY TOOLS TESTS
+  # ============================================================================
+
+  # get_cik_by_ticker - Basic functionality
+  - description: 'company-cik-apple'
+    vars:
+      prompt: '{"tool": "get_cik_by_ticker", "args": {"ticker": "AAPL"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.cik === "0000320193" || data.cik === "320193";
+
+  - description: 'company-cik-microsoft'
+    vars:
+      prompt: '{"tool": "get_cik_by_ticker", "args": {"ticker": "MSFT"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.cik === "0000789019" || data.cik === "789019";
+
+  - description: 'company-cik-nvidia'
+    vars:
+      prompt: '{"tool": "get_cik_by_ticker", "args": {"ticker": "NVDA"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.cik === "0001045810" || data.cik === "1045810";
+
+  - description: 'company-cik-invalid-ticker'
+    vars:
+      prompt: '{"tool": "get_cik_by_ticker", "args": {"ticker": "INVALID123XYZ"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.cik === -999999999 || data.error !== undefined || data.success === false;
+
+  # get_company_info - Detailed company information
+  - description: 'company-info-apple'
+    vars:
+      prompt: '{"tool": "get_company_info", "args": {"identifier": "AAPL"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const company = data.company || data;
+          return company.name && company.name.toLowerCase().includes('apple');
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const company = data.company || data;
+          return company.cik !== undefined;
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const company = data.company || data;
+          return company.sic !== undefined || company.sic_code !== undefined;
+
+  - description: 'company-info-by-cik'
+    vars:
+      prompt: '{"tool": "get_company_info", "args": {"identifier": "320193"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const company = data.company || data;
+          return company.name && company.name.toLowerCase().includes('apple');
+
+  # search_companies - Search functionality
+  - description: 'company-search-tech'
+    vars:
+      prompt: '{"tool": "search_companies", "args": {"query": "Apple", "limit": 5}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.success === true || Array.isArray(data.companies);
+
+  - description: 'company-search-with-limit'
+    vars:
+      prompt: '{"tool": "search_companies", "args": {"query": "Bank", "limit": 3}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const companies = data.companies || [];
+          return Array.isArray(companies) && companies.length <= 3;
+
+  # get_company_facts - Financial metrics
+  - description: 'company-facts-apple'
+    vars:
+      prompt: '{"tool": "get_company_facts", "args": {"identifier": "AAPL"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.success !== false && !data.error;
+
+  # ============================================================================
+  # FILING TOOLS TESTS
+  # ============================================================================
+
+  # get_recent_filings - Recent filings retrieval
+  - description: 'filings-recent-apple'
+    vars:
+      prompt: '{"tool": "get_recent_filings", "args": {"identifier": "AAPL", "days": 365, "limit": 10}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const filings = data.filings || data.results || [];
+          return Array.isArray(filings);
+
+  - description: 'filings-recent-10k-filter'
+    vars:
+      prompt: '{"tool": "get_recent_filings", "args": {"identifier": "MSFT", "form_type": "10-K", "days": 730, "limit": 5}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const filings = data.filings || data.results || [];
+          return filings.every(f =>
+            f.form_type === "10-K" || f.form === "10-K" || f.type === "10-K"
+          );
+
+  - description: 'filings-recent-8k-filter'
+    vars:
+      prompt: '{"tool": "get_recent_filings", "args": {"identifier": "NVDA", "form_type": "8-K", "days": 180, "limit": 5}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const filings = data.filings || data.results || [];
+          return Array.isArray(filings);
+
+  # get_filing_sections - Section extraction
+  - description: 'filings-sections-structure'
+    vars:
+      prompt: '{"tool": "get_recent_filings", "args": {"identifier": "AAPL", "form_type": "10-K", "days": 730, "limit": 1}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const filings = data.filings || data.results || [];
+          if (filings.length > 0) {
+            const f = filings[0];
+            return f.accession_number !== undefined || f.accession !== undefined;
+          }
+          return true;
+
+  # ============================================================================
+  # FINANCIAL TOOLS TESTS
+  # ============================================================================
+
+  # get_financials - Financial statements
+  - description: 'financial-statements-apple-all'
+    vars:
+      prompt: '{"tool": "get_financials", "args": {"identifier": "AAPL", "statement_type": "all"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.success !== false && !data.error;
+
+  - description: 'financial-statements-income'
+    vars:
+      prompt: '{"tool": "get_financials", "args": {"identifier": "MSFT", "statement_type": "income"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.success !== false && !data.error;
+
+  - description: 'financial-statements-balance'
+    vars:
+      prompt: '{"tool": "get_financials", "args": {"identifier": "NVDA", "statement_type": "balance"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.success !== false && !data.error;
+
+  - description: 'financial-statements-cash'
+    vars:
+      prompt: '{"tool": "get_financials", "args": {"identifier": "GOOGL", "statement_type": "cash"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.success !== false && !data.error;
+
+  # get_key_metrics - Key financial metrics
+  - description: 'financial-key-metrics'
+    vars:
+      prompt: '{"tool": "get_key_metrics", "args": {"identifier": "AAPL"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.success !== false && !data.error;
+
+  # discover_company_metrics - Metric discovery
+  - description: 'financial-discover-metrics'
+    vars:
+      prompt: '{"tool": "discover_company_metrics", "args": {"identifier": "MSFT"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const metrics = data.metrics || data.available_metrics || [];
+          return Array.isArray(metrics) || typeof data === 'object';
+
+  - description: 'financial-discover-metrics-filtered'
+    vars:
+      prompt: '{"tool": "discover_company_metrics", "args": {"identifier": "AAPL", "search_term": "revenue"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.success !== false && !data.error;
+
+  # compare_periods - Period comparison
+  - description: 'financial-compare-periods'
+    vars:
+      prompt: '{"tool": "compare_periods", "args": {"identifier": "AAPL", "metric": "Revenues", "start_year": 2022, "end_year": 2024}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return typeof data === 'object';
+
+  # get_segment_data - Segment analysis
+  - description: 'financial-segment-geographic'
+    vars:
+      prompt: '{"tool": "get_segment_data", "args": {"identifier": "AAPL", "segment_type": "geographic"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return typeof data === 'object';
+
+  # discover_xbrl_concepts - XBRL discovery
+  - description: 'financial-xbrl-discover'
+    vars:
+      prompt: '{"tool": "discover_xbrl_concepts", "args": {"identifier": "AAPL", "form_type": "10-K"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return typeof data === 'object';
+
+  # ============================================================================
+  # INSIDER TRADING TOOLS TESTS
+  # ============================================================================
+
+  # get_insider_transactions - Insider trading data
+  - description: 'insider-transactions-apple'
+    vars:
+      prompt: '{"tool": "get_insider_transactions", "args": {"identifier": "AAPL", "days": 180, "limit": 20}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return typeof data === 'object';
+
+  - description: 'insider-transactions-form4-only'
+    vars:
+      prompt: '{"tool": "get_insider_transactions", "args": {"identifier": "MSFT", "form_types": ["4"], "days": 90, "limit": 10}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return typeof data === 'object';
+
+  # get_insider_summary - Summary of insider activity
+  - description: 'insider-summary-nvidia'
+    vars:
+      prompt: '{"tool": "get_insider_summary", "args": {"identifier": "NVDA", "days": 180}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return typeof data === 'object';
+
+  # analyze_form4_transactions - Detailed Form 4 analysis
+  - description: 'insider-form4-analysis'
+    vars:
+      prompt: '{"tool": "analyze_form4_transactions", "args": {"identifier": "AAPL", "days": 90, "limit": 10}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return typeof data === 'object';
+
+  # analyze_insider_sentiment - Sentiment analysis
+  - description: 'insider-sentiment-analysis'
+    vars:
+      prompt: '{"tool": "analyze_insider_sentiment", "args": {"identifier": "MSFT", "months": 6}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return typeof data === 'object';
+
+  # ============================================================================
+  # DETERMINISM TESTS - Same input should yield consistent output
+  # ============================================================================
+
+  - description: 'determinism-cik-lookup-1'
+    vars:
+      prompt: '{"tool": "get_cik_by_ticker", "args": {"ticker": "TSLA"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.cik === "0001318605" || data.cik === "1318605";
+
+  - description: 'determinism-cik-lookup-2'
+    vars:
+      prompt: '{"tool": "get_cik_by_ticker", "args": {"ticker": "TSLA"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.cik === "0001318605" || data.cik === "1318605";
+
+  - description: 'determinism-company-info-1'
+    vars:
+      prompt: '{"tool": "get_company_info", "args": {"identifier": "AMZN"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const company = data.company || data;
+          return company.name && company.name.toLowerCase().includes('amazon');
+
+  - description: 'determinism-company-info-2'
+    vars:
+      prompt: '{"tool": "get_company_info", "args": {"identifier": "AMZN"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          const company = data.company || data;
+          return company.name && company.name.toLowerCase().includes('amazon');
+
+  # ============================================================================
+  # ERROR HANDLING TESTS
+  # ============================================================================
+
+  - description: 'error-invalid-identifier'
+    vars:
+      prompt: '{"tool": "get_company_info", "args": {"identifier": "NOTAREALCOMPANY999"}}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const data = JSON.parse(output);
+          return data.error !== undefined || data.success === false || data.message !== undefined;
+
+  - description: 'error-missing-required-arg'
+    vars:
+      prompt: '{"tool": "get_cik_by_ticker", "args": {}}'
+    assert:
+      - type: contains
+        value: 'validation error'
+

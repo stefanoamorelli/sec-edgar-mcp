@@ -7,6 +7,7 @@
   <img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" />
   <a href="https://mseep.ai/app/0132880c-5e83-410b-a1d5-d3df08ed7b5c"><img alt="Verified on MseeP" src="https://mseep.ai/badge.svg" /></a>
   <a href="https://doi.org/10.5281/zenodo.17123166"><img alt="DOI" src="https://zenodo.org/badge/DOI/10.5281/zenodo.17123166.svg" /></a>
+  <a href="https://github.com/stefanoamorelli/sec-edgar-mcp/actions/workflows/evals.yml"><img alt="Evals" src="https://github.com/stefanoamorelli/sec-edgar-mcp/actions/workflows/evals.yml/badge.svg" /></a>
 </p>
 
 MCP server for accessing SEC EDGAR filings. Connects AI assistants to company filings, financial statements, and insider trading data with exact numeric precision.
@@ -68,6 +69,14 @@ python -m sec_edgar_mcp.server --transport streamable-http --port 9870
 ```
 
 No authentication is included. Use only on private networks.
+
+## Evaluations
+
+[Promptfoo](https://github.com/promptfoo/promptfoo)-based test suite. See [`evals/`](evals/) for details.
+
+```bash
+cd evals && npm install && npm run eval
+```
 
 ## Documentation
 
