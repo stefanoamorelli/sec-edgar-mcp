@@ -9,7 +9,7 @@ importers:
   .:
     devDependencies:
       promptfoo:
-        specifier: ^0.120.4
+        specifier: ^0.120.23
         version: 0.120.23(@types/json-schema@7.0.15)(@types/node@25.2.2)(pg@8.18.0)(playwright-core@1.58.2)(socks@2.8.7)
 
 packages:
