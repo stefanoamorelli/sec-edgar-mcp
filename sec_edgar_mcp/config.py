@@ -1,11 +1,11 @@
 """
-SEC EDGAR MCP 配置模块
+SEC EDGAR MCP configuration module.
 
-管理所有配置项，包括：
-- User-Agent 配置
-- 速率限制配置
-- 超时配置
-- 本地缓存配置
+Manages all configuration items including:
+- User-Agent configuration
+- Rate limiting configuration
+- Timeout configuration
+- Local cache configuration
 """
 
 import os
@@ -14,142 +14,142 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# 自动加载 .env 文件（如果存在）
+# Auto-load .env file if it exists
 try:
     from dotenv import load_dotenv
     
-    # 尝试从多个位置加载 .env
+    # Try loading .env from multiple locations
     env_locations = [
-        Path.cwd() / ".env",                    # 当前目录
-        Path(__file__).parent.parent / ".env", # 项目根目录
+        Path.cwd() / ".env",                    # Current directory
+        Path(__file__).parent.parent / ".env", # Project root
     ]
     
     for env_file in env_locations:
         if env_file.exists():
             load_dotenv(env_file)
-            logger.debug(f"已加载环境变量文件: {env_file}")
+            logger.debug(f"Loaded environment file: {env_file}")
             break
 except ImportError:
-    logger.debug("python-dotenv 未安装，跳过 .env 文件加载")
+    logger.debug("python-dotenv not installed, skipping .env file loading")
 except Exception as e:
-    logger.warning(f"加载 .env 文件失败: {e}")
+    logger.warning(f"Failed to load .env file: {e}")
 
 
 def initialize_config():
-    """初始化 SEC EDGAR 基础配置，返回 User-Agent
+    """Initialize SEC EDGAR base configuration, return User-Agent.
     
-    SEC 要求 User-Agent 必须包含真实姓名和邮箱地址，格式如：
+    SEC requires User-Agent to include real name and email address in format:
     "Your Name (your@email.com)"
     
     Returns:
-        User-Agent 字符串
+        User-Agent string
         
     Raises:
-        ValueError: 如果 SEC_EDGAR_USER_AGENT 未设置或格式不正确（缺少邮箱）
+        ValueError: If SEC_EDGAR_USER_AGENT is not set or format is incorrect (missing email)
     """
     sec_edgar_user_agent = os.getenv("SEC_EDGAR_USER_AGENT")
     if not sec_edgar_user_agent:
         raise ValueError("SEC_EDGAR_USER_AGENT environment variable is not set.")
     
-    # 验证格式：必须包含邮箱地址（简单检查是否包含 @ 符号）
+    # Validate format: must contain email address (simple check for @ symbol)
     if "@" not in sec_edgar_user_agent:
         raise ValueError(
-            "SEC_EDGAR_USER_AGENT 必须包含真实邮箱地址。\n"
-            "格式示例: 'Your Name (your@email.com)'\n"
-            f"当前值: {sec_edgar_user_agent}"
+            "SEC_EDGAR_USER_AGENT must contain a valid email address.\n"
+            "Format example: 'Your Name (your@email.com)'\n"
+            f"Current value: {sec_edgar_user_agent}"
         )
 
-    logger.info(f"SEC EDGAR 配置已初始化，User-Agent: {sec_edgar_user_agent[:50]}...")
+    logger.info(f"SEC EDGAR configuration initialized, User-Agent: {sec_edgar_user_agent[:50]}...")
     return sec_edgar_user_agent
 
 
 def initialize_edgar_cache():
-    """初始化 edgartools 本地存储缓存
+    """Initialize edgartools local storage cache.
     
-    读取 SEC_EDGAR_CACHE_DIR 环境变量，配置 edgartools 的本地存储功能。
-    启用后可实现：
-    - 数据持久化缓存
-    - 离线访问能力
-    - 79x 性能提升（后续查询）
+    Reads SEC_EDGAR_CACHE_DIR environment variable to configure edgartools
+    local storage functionality. When enabled, provides:
+    - Persistent data caching
+    - Offline access capability
+    - 79x performance improvement (for subsequent queries)
     
     Returns:
-        缓存目录的完整路径
+        Full path to cache directory
     """
     cache_dir = os.getenv("SEC_EDGAR_CACHE_DIR", "~/.cache/sec-edgar")
     
-    # 展开 ~ 为用户主目录，并转换为绝对路径
+    # Expand ~ to user home directory and convert to absolute path
     cache_path = os.path.abspath(os.path.expanduser(cache_dir))
     
-    # 创建缓存目录
+    # Create cache directory
     try:
         os.makedirs(cache_path, exist_ok=True)
-        logger.info(f"缓存目录已创建/确认: {cache_path}")
+        logger.info(f"Cache directory created/verified: {cache_path}")
     except OSError as e:
-        logger.warning(f"无法创建缓存目录 {cache_path}: {e}")
-        # 继续执行，让 edgartools 使用默认位置
+        logger.warning(f"Cannot create cache directory {cache_path}: {e}")
+        # Continue execution, let edgartools use default location
     
-    # 必须在导入 edgar 模块之前设置环境变量
-    # edgartools 会在导入时读取此环境变量
+    # Must set environment variable before importing edgar module
+    # edgartools reads this environment variable during import
     os.environ["EDGAR_LOCAL_DATA_DIR"] = cache_path
     
-    # 启用 edgartools 本地存储
+    # Enable edgartools local storage
     try:
-        # 注意：必须在导入其他 edgar 模块之前调用
+        # Note: Must be called before importing other edgar modules
         import edgar
         edgar.use_local_storage(cache_path)
-        logger.info(f"✅ edgartools 本地存储已启用: {cache_path}")
-        logger.info("📊 后续查询将获得最多 79x 性能提升")
+        logger.info(f"✅ edgartools local storage enabled: {cache_path}")
+        logger.info("📊 Subsequent queries will achieve up to 79x performance boost")
         
-        # 验证路径是否生效
+        # Verify path is effective
         if hasattr(edgar, 'get_local_data_path'):
             actual_path = edgar.get_local_data_path()
             if actual_path != cache_path:
-                logger.warning(f"⚠️  实际缓存路径与配置不符: {actual_path}")
+                logger.warning(f"⚠️  Actual cache path differs from config: {actual_path}")
     except ImportError:
-        logger.warning("无法导入 edgar，可能是 edgartools 版本不支持")
+        logger.warning("Cannot import edgar, edgartools version may not support this")
     except Exception as e:
-        logger.warning(f"无法启用 edgartools 本地存储: {e}")
+        logger.warning(f"Cannot enable edgartools local storage: {e}")
     
     return cache_path
 
 
 def get_rate_limit():
-    """获取速率限制配置（请求/秒）
+    """Get rate limit configuration (requests/second).
     
-    从环境变量 SEC_EDGAR_RATE_LIMIT 读取，默认 8 请求/秒。
-    SEC 官方限制为 10 请求/秒，默认值提供了安全余量。
+    Reads from SEC_EDGAR_RATE_LIMIT environment variable, defaults to 8 req/s.
+    SEC official limit is 10 req/s, default provides safety margin.
     
     Returns:
-        每秒最大请求数
+        Maximum requests per second
     """
     try:
         rate = float(os.getenv("SEC_EDGAR_RATE_LIMIT", "8"))
         if rate <= 0 or rate > 10:
             logger.warning(
-                f"SEC_EDGAR_RATE_LIMIT={rate} 超出合理范围 (0, 10]，使用默认值 8"
+                f"SEC_EDGAR_RATE_LIMIT={rate} out of valid range (0, 10], using default 8"
             )
             return 8.0
         return rate
     except ValueError:
-        logger.warning("SEC_EDGAR_RATE_LIMIT 配置无效，使用默认值 8")
+        logger.warning("SEC_EDGAR_RATE_LIMIT invalid, using default 8")
         return 8.0
 
 
 def get_timeout():
-    """获取请求超时配置（秒）
+    """Get request timeout configuration (seconds).
     
-    从环境变量 SEC_EDGAR_TIMEOUT 读取，默认 30 秒。
-    对于大文件下载，可以设置更长的超时时间（如 60-120 秒）。
+    Reads from SEC_EDGAR_TIMEOUT environment variable, defaults to 30 seconds.
+    For large file downloads, can set longer timeout (e.g., 60-120 seconds).
     
     Returns:
-        超时时间（秒）
+        Timeout in seconds
     """
     try:
         timeout = int(os.getenv("SEC_EDGAR_TIMEOUT", "30"))
         if timeout <= 0:
-            logger.warning(f"SEC_EDGAR_TIMEOUT={timeout} 必须大于 0，使用默认值 30")
+            logger.warning(f"SEC_EDGAR_TIMEOUT={timeout} must be greater than 0, using default 30")
             return 30
         return timeout
     except ValueError:
-        logger.warning("SEC_EDGAR_TIMEOUT 配置无效，使用默认值 30")
+        logger.warning("SEC_EDGAR_TIMEOUT invalid, using default 30")
         return 30

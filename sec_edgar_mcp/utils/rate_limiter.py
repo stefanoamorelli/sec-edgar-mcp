@@ -1,7 +1,8 @@
 """
-速率限制器，确保遵守 SEC EDGAR 的访问限制
+Rate limiter to ensure compliance with SEC EDGAR access restrictions.
 
-SEC 要求最多 10 请求/秒，本模块提供线程安全的速率限制功能。
+SEC requires a maximum of 10 requests/second. This module provides
+thread-safe rate limiting functionality.
 """
 
 import time
@@ -13,79 +14,80 @@ logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
-    """全局速率限制器，确保遵守 SEC EDGAR 10 req/s 限制
+    """Global rate limiter to ensure SEC EDGAR 10 req/s compliance.
     
-    使用简单的时间间隔控制算法，确保相邻两次请求之间有足够的时间间隔。
-    线程安全，可在多线程环境中使用。
+    Uses a simple time interval control algorithm to ensure sufficient time
+    between adjacent requests. Thread-safe for use in multi-threaded environments.
     
     Args:
-        max_calls_per_second: 每秒最大请求数，默认 8（保守策略）
+        max_calls_per_second: Maximum requests per second, default 8 (conservative)
     """
 
     def __init__(self, max_calls_per_second: float = 8.0):
         if max_calls_per_second <= 0:
-            raise ValueError("max_calls_per_second 必须大于 0")
+            raise ValueError("max_calls_per_second must be greater than 0")
         
         self.max_calls = max_calls_per_second
-        # 计算最小时间间隔（秒）
+        # Calculate minimum interval (seconds)
         self.min_interval = 1.0 / max_calls_per_second
         self.last_call = 0.0
         self.lock = threading.Lock()
         
-        logger.info(f"速率限制器已初始化: {max_calls_per_second} 请求/秒 (间隔: {self.min_interval:.3f}秒)")
+        logger.info(f"Rate limiter initialized: {max_calls_per_second} req/s (interval: {self.min_interval:.3f}s)")
 
     def wait_if_needed(self) -> float:
-        """如需要则等待，确保不超过速率限制
+        """Wait if necessary to ensure rate limit is not exceeded.
         
         Returns:
-            实际等待的时间（秒），如果不需要等待则返回 0
+            Actual wait time (seconds), returns 0 if no wait needed
         """
         with self.lock:
             current = time.time()
             elapsed = current - self.last_call
             
             if elapsed < self.min_interval:
-                # 需要等待
+                # Need to wait
                 sleep_time = self.min_interval - elapsed
-                logger.debug(f"速率限制：等待 {sleep_time:.3f}秒")
+                logger.debug(f"Rate limit: waiting {sleep_time:.3f}s")
                 time.sleep(sleep_time)
                 self.last_call = time.time()
                 return sleep_time
             else:
-                # 不需要等待
+                # No wait needed
                 self.last_call = current
                 return 0.0
 
 
-# 全局单例实例
+# Global singleton instance
 _global_limiter = None
 _limiter_lock = threading.Lock()
 
 
 def get_rate_limiter() -> RateLimiter:
-    """获取全局速率限制器单例
+    """Get global rate limiter singleton.
     
-    从环境变量 SEC_EDGAR_RATE_LIMIT 读取配置，默认 8 请求/秒。
+    Reads configuration from SEC_EDGAR_RATE_LIMIT environment variable,
+    defaults to 8 requests/second.
     
     Returns:
-        全局 RateLimiter 实例
+        Global RateLimiter instance
     """
     global _global_limiter
     
     if _global_limiter is None:
         with _limiter_lock:
-            # 双重检查锁定
+            # Double-checked locking
             if _global_limiter is None:
                 try:
                     rate = float(os.getenv("SEC_EDGAR_RATE_LIMIT", "8"))
                     if rate <= 0 or rate > 10:
                         logger.warning(
-                            f"SEC_EDGAR_RATE_LIMIT={rate} 超出合理范围 (0, 10]，使用默认值 8"
+                            f"SEC_EDGAR_RATE_LIMIT={rate} out of valid range (0, 10], using default 8"
                         )
                         rate = 8.0
                 except ValueError:
                     logger.warning(
-                        f"SEC_EDGAR_RATE_LIMIT 配置无效，使用默认值 8"
+                        f"SEC_EDGAR_RATE_LIMIT invalid, using default 8"
                     )
                     rate = 8.0
                 
@@ -95,7 +97,7 @@ def get_rate_limiter() -> RateLimiter:
 
 
 def reset_rate_limiter():
-    """重置全局速率限制器（主要用于测试）"""
+    """Reset global rate limiter (primarily for testing)."""
     global _global_limiter
     with _limiter_lock:
         _global_limiter = None
