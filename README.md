@@ -112,3 +112,22 @@ See [CITATION.cff](CITATION.cff) for additional formats.
 
 [AGPL-3.0](LICENSE). For commercial licensing: stefano@amorelli.tech
 
+
+
+## Installation
+
+```bash
+# Installation instructions
+```
+
+
+## Usage
+
+```python
+# Usage examples
+```
+
+
+## Contributing
+
+Contributions are welcome!
