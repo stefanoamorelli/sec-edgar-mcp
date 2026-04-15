@@ -120,13 +120,14 @@ class InsiderTools(BaseTools):
 
             try:
                 form4 = filing.obj()
-                if form4:
+                owner = self._get_primary_owner(form4) if form4 else None
+                if owner is not None:
                     details["owner"] = {
-                        "name": getattr(form4, "owner_name", ""),
-                        "title": getattr(form4, "owner_title", ""),
-                        "is_director": getattr(form4, "is_director", False),
-                        "is_officer": getattr(form4, "is_officer", False),
-                        "is_ten_percent_owner": getattr(form4, "is_ten_percent_owner", False),
+                        "name": getattr(owner, "name", "") or "",
+                        "title": getattr(owner, "officer_title", "") or "",
+                        "is_director": bool(getattr(owner, "is_director", False)),
+                        "is_officer": bool(getattr(owner, "is_officer", False)),
+                        "is_ten_percent_owner": bool(getattr(owner, "is_ten_pct_owner", False)),
                     }
             except Exception:
                 pass
@@ -214,6 +215,17 @@ class InsiderTools(BaseTools):
 
     # Private helper methods
 
+    @staticmethod
+    def _get_primary_owner(ownership):
+        """Return the first reporting Owner object, or None if unavailable."""
+        try:
+            owners = getattr(getattr(ownership, "reporting_owners", None), "owners", None)
+            if owners:
+                return owners[0]
+        except Exception:
+            pass
+        return None
+
     def _create_transaction_info(self, filing) -> Optional[Dict[str, Any]]:
         """Create transaction info dict from a filing."""
         try:
@@ -230,10 +242,17 @@ class InsiderTools(BaseTools):
 
             try:
                 ownership = filing.obj()
-                if ownership:
-                    for attr in ["owner_name", "owner_title", "is_director", "is_officer"]:
-                        if hasattr(ownership, attr):
-                            transaction[attr] = getattr(ownership, attr)
+                owner = self._get_primary_owner(ownership) if ownership else None
+                if owner is not None:
+                    owner_data = {
+                        "owner_name": getattr(owner, "name", None),
+                        "owner_title": getattr(owner, "officer_title", None),
+                        "is_director": getattr(owner, "is_director", None),
+                        "is_officer": getattr(owner, "is_officer", None),
+                    }
+                    for key, value in owner_data.items():
+                        if value is not None and value != "":
+                            transaction[key] = value
             except Exception:
                 pass
 
@@ -260,8 +279,10 @@ class InsiderTools(BaseTools):
         """Add insider name to summary if available."""
         try:
             ownership = filing.obj()
-            if ownership and hasattr(ownership, "owner_name"):
-                summary["insiders"].add(ownership.owner_name)
+            owner = self._get_primary_owner(ownership) if ownership else None
+            name = getattr(owner, "name", None) if owner is not None else None
+            if name:
+                summary["insiders"].add(name)
         except Exception:
             pass
 
@@ -280,31 +301,43 @@ class InsiderTools(BaseTools):
             if not form4:
                 return transaction
 
-            # Owner information
-            for attr in [
-                "owner_name",
-                "owner_title",
-                "is_director",
-                "is_officer",
-                "is_ten_percent_owner",
-            ]:
-                if hasattr(form4, attr):
-                    transaction[attr] = getattr(form4, attr)
+            # Owner information is nested under reporting_owners.owners[0].
+            owner = self._get_primary_owner(form4)
+            if owner is not None:
+                owner_fields = {
+                    "owner_name": getattr(owner, "name", None),
+                    "owner_title": getattr(owner, "officer_title", None),
+                    "is_director": getattr(owner, "is_director", None),
+                    "is_officer": getattr(owner, "is_officer", None),
+                    "is_ten_percent_owner": getattr(owner, "is_ten_pct_owner", None),
+                }
+                for key, value in owner_fields.items():
+                    if value is not None and value != "":
+                        transaction[key] = value
 
-            # Transaction data
-            if hasattr(form4, "transactions") and form4.transactions:
+            # Transaction activities (non-derivative + derivative combined).
+            try:
+                activities = form4.get_transaction_activities()
+            except Exception:
+                activities = None
+            if activities:
+                filing_date_iso = filing.filing_date.isoformat() if filing.filing_date else None
                 transactions = []
-                for tx in form4.transactions:
-                    tx_data = self._extract_transaction_data(tx)
+                for tx in activities:
+                    tx_data = self._extract_transaction_data(tx, filing_date_iso)
                     if tx_data:
                         transactions.append(tx_data)
                 if transactions:
                     transaction["transactions"] = transactions
 
-            # Holdings data
-            if hasattr(form4, "holdings") and form4.holdings:
+            # Holdings (populated for Form 3, and for Form 4/5 post-transaction amounts).
+            try:
+                holdings_list = form4.extract_form3_holdings()
+            except Exception:
+                holdings_list = None
+            if holdings_list:
                 holdings = []
-                for holding in form4.holdings:
+                for holding in holdings_list:
                     holding_data = self._extract_holding_data(holding)
                     if holding_data:
                         holdings.append(holding_data)
@@ -316,39 +349,71 @@ class InsiderTools(BaseTools):
 
         return transaction
 
-    def _extract_transaction_data(self, tx) -> Optional[Dict[str, Any]]:
-        """Extract data from a transaction object."""
-        tx_data = {}
-        # (edgartools attr, output key, converter)
+    def _extract_transaction_data(
+        self, tx, filing_date_iso: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Extract data from a TransactionActivity object."""
+        tx_data: Dict[str, Any] = {}
+
+        # The TransactionActivity model exposes a flat set of attributes; there
+        # is no per-transaction date field, so we fall back to the filing date.
+        if filing_date_iso:
+            tx_data["transaction_date"] = filing_date_iso
+
         attrs = [
-            ("date", "transaction_date", str),
-            ("transaction_code", "transaction_code", None),
+            ("code", "transaction_code", None),
+            ("transaction_type", "transaction_type", None),
+            ("security_title", "security_title", None),
             ("shares", "shares", float),
-            ("price", "price_per_share", float),
-            ("remaining", "shares_owned_after", float),
-            ("acquired_disposed", "acquisition_or_disposition", None),
+            ("price_per_share", "price_per_share", float),
+            ("value", "transaction_amount", float),
         ]
 
         for src, dest, converter in attrs:
-            if hasattr(tx, src):
-                value = getattr(tx, src)
-                if value is not None:
-                    tx_data[dest] = converter(value) if converter else value
+            value = getattr(tx, src, None)
+            if value is None or value == "":
+                continue
+            try:
+                tx_data[dest] = converter(value) if converter else value
+            except (TypeError, ValueError):
+                tx_data[dest] = value
 
-        if "shares" in tx_data and "price_per_share" in tx_data:
-            tx_data["transaction_amount"] = float(tx_data["shares"]) * float(
-                tx_data["price_per_share"]
-            )
+        # Fall back to shares * price_per_share when the reported value is
+        # absent but both components are present.
+        if "transaction_amount" not in tx_data and "shares" in tx_data and "price_per_share" in tx_data:
+            try:
+                tx_data["transaction_amount"] = float(tx_data["shares"]) * float(
+                    tx_data["price_per_share"]
+                )
+            except (TypeError, ValueError):
+                pass
 
-        return tx_data if tx_data else None
+        # Drop the filing-date placeholder if nothing else extracted — keeps
+        # empty activities from masquerading as real data.
+        meaningful = [k for k in tx_data if k != "transaction_date"]
+        return tx_data if meaningful else None
 
     def _extract_holding_data(self, holding) -> Optional[Dict[str, Any]]:
-        """Extract data from a holding object."""
-        holding_data = {}
+        """Extract data from a SecurityHolding object."""
+        holding_data: Dict[str, Any] = {}
 
-        if hasattr(holding, "shares_owned") and holding.shares_owned:
-            holding_data["shares_owned"] = float(holding.shares_owned)
-        if hasattr(holding, "ownership_nature"):
-            holding_data["ownership_nature"] = holding.ownership_nature
+        shares = getattr(holding, "shares", None)
+        if shares not in (None, ""):
+            try:
+                holding_data["shares_owned"] = float(shares)
+            except (TypeError, ValueError):
+                holding_data["shares_owned"] = shares
+
+        security_title = getattr(holding, "security_title", None)
+        if security_title:
+            holding_data["security_title"] = security_title
+
+        ownership_nature = getattr(holding, "ownership_nature", None)
+        if ownership_nature:
+            holding_data["ownership_nature"] = ownership_nature
+
+        direct_ownership = getattr(holding, "direct_ownership", None)
+        if direct_ownership is not None:
+            holding_data["direct_ownership"] = bool(direct_ownership)
 
         return holding_data if holding_data else None
