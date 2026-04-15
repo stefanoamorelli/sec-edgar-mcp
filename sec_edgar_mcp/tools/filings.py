@@ -186,10 +186,21 @@ class FilingsTools(BaseTools):
         if form_type not in ["10-K", "10-Q"]:
             return sections
 
-        for attr in ["business", "risk_factors", "mda"]:
-            if hasattr(filing_obj, attr):
-                content = str(getattr(filing_obj, attr))
-                sections[attr] = content[:10000]
+        # Output key -> list of candidate attribute names on the filing object.
+        # 10-K exposes business/risk_factors/management_discussion; 10-Q
+        # exposes none of these and intentionally leaves sections empty.
+        section_sources = {
+            "business": ["business"],
+            "risk_factors": ["risk_factors"],
+            "mda": ["management_discussion", "mda"],
+        }
+
+        for output_key, candidates in section_sources.items():
+            for attr in candidates:
+                value = getattr(filing_obj, attr, None)
+                if value:
+                    sections[output_key] = str(value)[:10000]
+                    break
 
         if hasattr(filing_obj, "financials"):
             sections["has_financials"] = True
