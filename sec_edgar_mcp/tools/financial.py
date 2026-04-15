@@ -398,16 +398,25 @@ class FinancialTools(BaseTools):
 
             attr, key, _ = statement_configs[stmt_type]
             try:
-                stmt_method = getattr(financials, attr)
+                stmt_method = getattr(financials, attr, None)
                 stmt = stmt_method() if callable(stmt_method) else stmt_method
 
-                if stmt is not None and hasattr(stmt, "to_dict"):
-                    statements[key] = {
-                        "data": stmt.to_dict(orient="index"),
-                        "columns": list(stmt.columns),
-                        "index": list(stmt.index),
-                    }
-                elif xbrl:
+                populated = False
+                if stmt is not None and hasattr(stmt, "to_dataframe"):
+                    try:
+                        df = stmt.to_dataframe()
+                        if df is not None and not df.empty:
+                            statements[key] = {
+                                "data": df.to_dict(),
+                                "columns": [str(c) for c in df.columns],
+                                "index": [str(i) for i in df.index],
+                                "source": "edgartools_statement",
+                            }
+                            populated = True
+                    except Exception:
+                        populated = False
+
+                if not populated and xbrl:
                     discovered = self.xbrl_extractor.discover_statement_concepts(xbrl, filing, stmt_type)
                     if discovered:
                         statements[key] = {"data": discovered, "source": "xbrl_concepts_dynamic"}
