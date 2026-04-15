@@ -319,21 +319,26 @@ class InsiderTools(BaseTools):
     def _extract_transaction_data(self, tx) -> Optional[Dict[str, Any]]:
         """Extract data from a transaction object."""
         tx_data = {}
+        # (edgartools attr, output key, converter)
         attrs = [
-            ("transaction_date", str),
-            ("transaction_code", None),
-            ("shares", float),
-            ("price_per_share", float),
-            ("transaction_amount", float),
-            ("shares_owned_after", float),
-            ("acquisition_or_disposition", None),
+            ("date", "transaction_date", str),
+            ("transaction_code", "transaction_code", None),
+            ("shares", "shares", float),
+            ("price", "price_per_share", float),
+            ("remaining", "shares_owned_after", float),
+            ("acquired_disposed", "acquisition_or_disposition", None),
         ]
 
-        for attr, converter in attrs:
-            if hasattr(tx, attr):
-                value = getattr(tx, attr)
+        for src, dest, converter in attrs:
+            if hasattr(tx, src):
+                value = getattr(tx, src)
                 if value is not None:
-                    tx_data[attr] = converter(value) if converter else value
+                    tx_data[dest] = converter(value) if converter else value
+
+        if "shares" in tx_data and "price_per_share" in tx_data:
+            tx_data["transaction_amount"] = float(tx_data["shares"]) * float(
+                tx_data["price_per_share"]
+            )
 
         return tx_data if tx_data else None
 
