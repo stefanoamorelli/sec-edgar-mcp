@@ -167,8 +167,9 @@ class FilingsTools(BaseTools):
             "8.01": "Other Events",
         }
 
+        items = getattr(eightk, "items", None) or []
         for item_code, description in item_descriptions.items():
-            if hasattr(eightk, "has_item") and eightk.has_item(item_code):
+            if any(item_code in str(it) for it in items):
                 analysis["events"][item_code] = {"present": True, "description": description}
 
         if hasattr(eightk, "has_press_release"):
