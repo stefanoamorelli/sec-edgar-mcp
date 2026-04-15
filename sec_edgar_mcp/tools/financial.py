@@ -18,14 +18,27 @@ class FinancialTools(BaseTools):
         super().__init__()
         self.xbrl_extractor = XBRLExtractor()
 
-    def get_financials(self, identifier: str, statement_type: str = "all") -> ToolResponse:
-        """Get financial statements from the latest SEC filing."""
+    def get_financials(
+        self,
+        identifier: str,
+        statement_type: str = "all",
+        form_type: Optional[str] = None,
+    ) -> ToolResponse:
+        """Get financial statements from an SEC filing.
+
+        When ``form_type`` is ``None`` (default), the most recent 10-K or 10-Q is used.
+        When set (e.g. ``"10-K"``, ``"10-Q"``, ``"10-K/A"``), filing selection is
+        restricted to the latest filing of that form.
+        """
         try:
             company = self.client.get_company(identifier)
-            latest_filing, form_type = self._get_latest_financial_filing(company)
+            latest_filing, resolved_form_type = self._get_latest_financial_filing(company, form_type=form_type)
 
             if not latest_filing:
+                if form_type:
+                    return {"success": False, "error": f"No {form_type} filings found"}
                 return {"success": False, "error": "No 10-K or 10-Q filings found"}
+            form_type = resolved_form_type
 
             financials = self._extract_financials(latest_filing, company, form_type)
             if not financials:
@@ -334,8 +347,19 @@ class FinancialTools(BaseTools):
 
     # Private helper methods
 
-    def _get_latest_financial_filing(self, company):
-        """Get the most recent 10-K or 10-Q filing."""
+    def _get_latest_financial_filing(self, company, form_type: Optional[str] = None):
+        """Get the most recent filing for financial extraction.
+
+        When ``form_type`` is provided, only that form is considered. Otherwise the
+        most recent of 10-K or 10-Q wins.
+        """
+        if form_type:
+            try:
+                filing = company.get_filings(form=form_type).latest()
+            except Exception:
+                filing = None
+            return (filing, form_type) if filing else (None, None)
+
         latest_10k = latest_10q = None
 
         try:
