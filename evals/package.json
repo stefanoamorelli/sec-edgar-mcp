@@ -31,6 +31,6 @@
     ]
   },
   "devDependencies": {
-    "promptfoo": "^0.120.23"
+    "promptfoo": "^0.121.5"
   }
 }
