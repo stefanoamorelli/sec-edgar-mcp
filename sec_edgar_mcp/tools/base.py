@@ -23,7 +23,10 @@ class BaseTools:
         if isinstance(date_value, date):
             return datetime.combine(date_value, datetime.min.time())
         if isinstance(date_value, str):
-            return datetime.fromisoformat(date_value.replace("Z", "+00:00"))
+            try:
+                return datetime.fromisoformat(date_value.replace("Z", "+00:00"))
+            except ValueError:
+                return None
         return None
 
     def _format_date(self, date_value) -> str:
