@@ -383,10 +383,11 @@ class FinancialTools(BaseTools):
     def _extract_statements(self, financials, xbrl, filing, statement_type: str) -> Dict[str, Any]:
         """Extract financial statements based on type."""
         statements: Dict[str, Any] = {}
+        # (edgartools attribute, output key, concepts)
         statement_configs = {
-            "income": ("income_statement", INCOME_CONCEPTS),
-            "balance": ("balance_sheet", BALANCE_CONCEPTS),
-            "cash": ("cash_flow", CASH_FLOW_CONCEPTS),
+            "income": ("income_statement", "income_statement", INCOME_CONCEPTS),
+            "balance": ("balance_sheet", "balance_sheet", BALANCE_CONCEPTS),
+            "cash": ("cash_flow_statement", "cash_flow", CASH_FLOW_CONCEPTS),
         }
 
         types_to_extract = list(statement_configs.keys()) if statement_type == "all" else [statement_type]
@@ -395,9 +396,9 @@ class FinancialTools(BaseTools):
             if stmt_type not in statement_configs:
                 continue
 
-            key, _ = statement_configs[stmt_type]
+            attr, key, _ = statement_configs[stmt_type]
             try:
-                stmt_method = getattr(financials, f"{key}")
+                stmt_method = getattr(financials, attr)
                 stmt = stmt_method() if callable(stmt_method) else stmt_method
 
                 if stmt is not None and hasattr(stmt, "to_dict"):

@@ -167,8 +167,9 @@ class FilingsTools(BaseTools):
             "8.01": "Other Events",
         }
 
+        items = getattr(eightk, "items", None) or []
         for item_code, description in item_descriptions.items():
-            if hasattr(eightk, "has_item") and eightk.has_item(item_code):
+            if any(item_code in str(it) for it in items):
                 analysis["events"][item_code] = {"present": True, "description": description}
 
         if hasattr(eightk, "has_press_release"):
@@ -185,10 +186,21 @@ class FilingsTools(BaseTools):
         if form_type not in ["10-K", "10-Q"]:
             return sections
 
-        for attr in ["business", "risk_factors", "mda"]:
-            if hasattr(filing_obj, attr):
-                content = str(getattr(filing_obj, attr))
-                sections[attr] = content[:10000]
+        # Output key -> list of candidate attribute names on the filing object.
+        # 10-K exposes business/risk_factors/management_discussion; 10-Q
+        # exposes none of these and intentionally leaves sections empty.
+        section_sources = {
+            "business": ["business"],
+            "risk_factors": ["risk_factors"],
+            "mda": ["management_discussion", "mda"],
+        }
+
+        for output_key, candidates in section_sources.items():
+            for attr in candidates:
+                value = getattr(filing_obj, attr, None)
+                if value:
+                    sections[output_key] = str(value)[:10000]
+                    break
 
         if hasattr(filing_obj, "financials"):
             sections["has_financials"] = True
