@@ -18,14 +18,27 @@ class FinancialTools(BaseTools):
         super().__init__()
         self.xbrl_extractor = XBRLExtractor()
 
-    def get_financials(self, identifier: str, statement_type: str = "all") -> ToolResponse:
-        """Get financial statements from the latest SEC filing."""
+    def get_financials(
+        self,
+        identifier: str,
+        statement_type: str = "all",
+        form_type: Optional[str] = None,
+    ) -> ToolResponse:
+        """Get financial statements from an SEC filing.
+
+        When ``form_type`` is ``None`` (default), the most recent 10-K or 10-Q is used.
+        When set (e.g. ``"10-K"``, ``"10-Q"``, ``"10-K/A"``), filing selection is
+        restricted to the latest filing of that form.
+        """
         try:
             company = self.client.get_company(identifier)
-            latest_filing, form_type = self._get_latest_financial_filing(company)
+            latest_filing, resolved_form_type = self._get_latest_financial_filing(company, form_type=form_type)
 
             if not latest_filing:
+                if form_type:
+                    return {"success": False, "error": f"No {form_type} filings found"}
                 return {"success": False, "error": "No 10-K or 10-Q filings found"}
+            form_type = resolved_form_type
 
             financials = self._extract_financials(latest_filing, company, form_type)
             if not financials:
@@ -334,8 +347,19 @@ class FinancialTools(BaseTools):
 
     # Private helper methods
 
-    def _get_latest_financial_filing(self, company):
-        """Get the most recent 10-K or 10-Q filing."""
+    def _get_latest_financial_filing(self, company, form_type: Optional[str] = None):
+        """Get the most recent filing for financial extraction.
+
+        When ``form_type`` is provided, only that form is considered. Otherwise the
+        most recent of 10-K or 10-Q wins.
+        """
+        if form_type:
+            try:
+                filing = company.get_filings(form=form_type).latest()
+            except Exception:
+                filing = None
+            return (filing, form_type) if filing else (None, None)
+
         latest_10k = latest_10q = None
 
         try:
@@ -383,10 +407,11 @@ class FinancialTools(BaseTools):
     def _extract_statements(self, financials, xbrl, filing, statement_type: str) -> Dict[str, Any]:
         """Extract financial statements based on type."""
         statements: Dict[str, Any] = {}
+        # (edgartools attribute, output key, concepts)
         statement_configs = {
-            "income": ("income_statement", INCOME_CONCEPTS),
-            "balance": ("balance_sheet", BALANCE_CONCEPTS),
-            "cash": ("cash_flow", CASH_FLOW_CONCEPTS),
+            "income": ("income_statement", "income_statement", INCOME_CONCEPTS),
+            "balance": ("balance_sheet", "balance_sheet", BALANCE_CONCEPTS),
+            "cash": ("cash_flow_statement", "cash_flow", CASH_FLOW_CONCEPTS),
         }
 
         types_to_extract = list(statement_configs.keys()) if statement_type == "all" else [statement_type]
@@ -395,18 +420,27 @@ class FinancialTools(BaseTools):
             if stmt_type not in statement_configs:
                 continue
 
-            key, _ = statement_configs[stmt_type]
+            attr, key, _ = statement_configs[stmt_type]
             try:
-                stmt_method = getattr(financials, f"{key}")
+                stmt_method = getattr(financials, attr, None)
                 stmt = stmt_method() if callable(stmt_method) else stmt_method
 
-                if stmt is not None and hasattr(stmt, "to_dict"):
-                    statements[key] = {
-                        "data": stmt.to_dict(orient="index"),
-                        "columns": list(stmt.columns),
-                        "index": list(stmt.index),
-                    }
-                elif xbrl:
+                populated = False
+                if stmt is not None and hasattr(stmt, "to_dataframe"):
+                    try:
+                        df = stmt.to_dataframe()
+                        if df is not None and not df.empty:
+                            statements[key] = {
+                                "data": df.to_dict(),
+                                "columns": [str(c) for c in df.columns],
+                                "index": [str(i) for i in df.index],
+                                "source": "edgartools_statement",
+                            }
+                            populated = True
+                    except Exception:
+                        populated = False
+
+                if not populated and xbrl:
                     discovered = self.xbrl_extractor.discover_statement_concepts(xbrl, filing, stmt_type)
                     if discovered:
                         statements[key] = {"data": discovered, "source": "xbrl_concepts_dynamic"}

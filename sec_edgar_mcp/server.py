@@ -2,6 +2,8 @@
 
 import argparse
 import logging
+from typing import Optional
+
 from mcp.server.fastmcp import FastMCP
 
 from sec_edgar_mcp.tools import CompanyTools, FilingsTools, FinancialTools, InsiderTools
@@ -170,19 +172,25 @@ def get_filing_sections(identifier: str, accession_number: str, form_type: str):
 # =============================================================================
 
 
-def get_financials(identifier: str, statement_type: str = "all"):
+def get_financials(identifier: str, statement_type: str = "all", form_type: Optional[str] = None):
     f"""
-    Extract financial statements from the latest SEC filing.
+    Extract financial statements from an SEC filing.
 
     <when-to-use>
       Use this tool when users ask about income statements, revenue, net income,
       earnings, profit margins, balance sheets, assets, liabilities, equity, debt,
       cash flow statements, operating cash flow, free cash flow, or capex.
+
+      Pass ``form_type="10-K"`` when the question is fiscal-year scoped (annual
+      figures, FY24, annual report) to avoid accidentally returning the latest
+      10-Q. Pass ``form_type="10-Q"`` for quarterly questions.
     </when-to-use>
 
     Args:
         identifier: Company ticker symbol or CIK number
         statement_type: "income", "balance", "cash", or "all" (default: "all")
+        form_type: Optional filing form to pin the selection to, e.g. "10-K",
+            "10-Q", "10-K/A". When omitted, the most recent 10-K or 10-Q is used.
 
     Returns:
         Financial statement data with exact values from XBRL.
@@ -193,7 +201,7 @@ def get_financials(identifier: str, statement_type: str = "all"):
       <period>Note the fiscal period end date.</period>
     </presentation>
     """
-    return financial_tools.get_financials(identifier, statement_type)
+    return financial_tools.get_financials(identifier, statement_type, form_type=form_type)
 
 
 def get_segment_data(identifier: str, segment_type: str = "geographic"):
