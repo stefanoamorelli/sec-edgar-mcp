@@ -203,8 +203,8 @@ class FinancialTools(BaseTools):
             company = self.client.get_company(identifier)
             facts = company.get_facts()
 
-            fact_data = facts.get_fact(metric)
-            if fact_data is None or fact_data.empty:
+            fact_data = self._get_metric_series(facts, metric)
+            if self._is_fact_data_empty(fact_data):
                 return {"success": False, "error": f"No data found for metric: {metric}"}
 
             period_data = self._filter_by_year_range(fact_data, start_year, end_year)
@@ -427,6 +427,11 @@ class FinancialTools(BaseTools):
         result_metrics: Dict[str, Any] = {}
 
         if not hasattr(facts, "data"):
+            for metric in metrics:
+                fact = self._get_latest_metric_fact(facts, metric)
+                if fact is None:
+                    continue
+                result_metrics[metric] = self._fact_to_metric(fact)
             return result_metrics
 
         facts_data = facts.data
@@ -462,20 +467,100 @@ class FinancialTools(BaseTools):
 
         return result_metrics
 
+    def _get_latest_metric_fact(self, facts, metric: str):
+        """Return the latest fact for a metric across supported edgartools APIs."""
+        try:
+            return facts.get_fact(metric)
+        except Exception:
+            return None
+
+    def _fact_to_metric(self, fact) -> Dict[str, Any]:
+        """Convert an edgartools FinancialFact-like object into MCP metric output."""
+        value = getattr(fact, "numeric_value", None)
+        if value is None:
+            value = getattr(fact, "value", 0)
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            value = 0.0
+
+        period_end = getattr(fact, "period_end", None)
+        period = period_end.isoformat() if hasattr(period_end, "isoformat") else str(period_end or "")
+
+        return {
+            "value": value,
+            "unit": getattr(fact, "unit", ""),
+            "period": period,
+            "form": getattr(fact, "form_type", ""),
+            "fiscal_year": getattr(fact, "fiscal_year", ""),
+            "fiscal_period": getattr(fact, "fiscal_period", ""),
+        }
+
+    def _get_metric_series(self, facts, metric: str):
+        """Return a multi-period series for a metric without assuming a pandas-only API."""
+        if hasattr(facts, "time_series"):
+            try:
+                return facts.time_series(metric, periods=100)
+            except Exception:
+                pass
+        return self._get_latest_metric_fact(facts, metric)
+
+    def _is_fact_data_empty(self, fact_data) -> bool:
+        """Check whether fact data is empty for DataFrame, sequence, or FinancialFact APIs."""
+        if fact_data is None:
+            return True
+        empty = getattr(fact_data, "empty", None)
+        if empty is not None:
+            return bool(empty)
+        try:
+            return len(fact_data) == 0
+        except TypeError:
+            return False
+
+    def _fact_value(self, fact, *names, default=None):
+        """Read a field from a DataFrame row dict or FinancialFact-like object."""
+        for name in names:
+            if hasattr(fact, "get"):
+                value = fact.get(name, None)
+                if value is not None:
+                    return value
+            value = getattr(fact, name, None)
+            if value is not None:
+                return value
+        return default
+
+    def _format_fact_value(self, value):
+        """Convert fact values that may be dates into JSON-friendly output."""
+        if hasattr(value, "isoformat"):
+            return value.isoformat()
+        return value
+
+    def _iter_fact_rows(self, fact_data):
+        """Iterate over fact rows from DataFrame, list, or single FinancialFact inputs."""
+        if hasattr(fact_data, "iterrows"):
+            for _, row in fact_data.iterrows():
+                yield row
+            return
+        if isinstance(fact_data, (list, tuple)):
+            yield from fact_data
+            return
+        yield fact_data
+
     def _filter_by_year_range(self, fact_data, start_year: int, end_year: int) -> List[Dict[str, Any]]:
         """Filter fact data by year range."""
         period_data: List[Dict[str, Any]] = []
-        for _, row in fact_data.iterrows():
+        for row in self._iter_fact_rows(fact_data):
             try:
-                year = int(row.get("fy", 0))
+                year = int(self._fact_value(row, "fy", "fiscal_year", default=0))
                 if start_year <= year <= end_year:
+                    value = self._fact_value(row, "value", "numeric_value", "val", default=0)
                     period_data.append(
                         {
                             "year": year,
-                            "period": row.get("fp", ""),
-                            "value": float(row.get("value", 0)),
-                            "unit": row.get("unit", "USD"),
-                            "form": row.get("form", ""),
+                            "period": self._fact_value(row, "fp", "fiscal_period", default=""),
+                            "value": float(value),
+                            "unit": self._fact_value(row, "unit", "unit_ref", default="USD"),
+                            "form": self._fact_value(row, "form", "form_type", default=""),
                         }
                     )
             except Exception:
@@ -547,14 +632,26 @@ class FinancialTools(BaseTools):
 
         for fact_name in common_facts:
             try:
-                fact_data = facts.get_fact(fact_name)
-                if fact_data is not None and not fact_data.empty:
+                fact_data = self._get_metric_series(facts, fact_name)
+                if not self._is_fact_data_empty(fact_data):
                     if not search_term or search_term.lower() in fact_name.lower():
+                        rows = list(self._iter_fact_rows(fact_data))
+                        latest = rows[-1] if rows else None
                         available_facts.append(
                             {
                                 "name": fact_name,
-                                "count": len(fact_data),
-                                "latest_period": fact_data.iloc[-1].get("end", "") if not fact_data.empty else None,
+                                "count": len(rows),
+                                "latest_period": self._format_fact_value(
+                                    self._fact_value(
+                                        latest,
+                                        "end",
+                                        "period_end",
+                                        "period",
+                                        default=None,
+                                    )
+                                )
+                                if latest is not None
+                                else None,
                             }
                         )
             except Exception:
