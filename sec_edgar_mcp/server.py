@@ -79,7 +79,7 @@ def search_companies(query: str, limit: int = 10):
 
 
 def get_company_facts(identifier: str):
-    f"""
+    """
     Retrieve all available XBRL facts for a company from SEC filings.
 
     Args:
@@ -171,7 +171,7 @@ def get_filing_sections(identifier: str, accession_number: str, form_type: str):
 
 
 def get_financials(identifier: str, statement_type: str = "all"):
-    f"""
+    """
     Extract financial statements from the latest SEC filing.
 
     <when-to-use>
@@ -197,7 +197,7 @@ def get_financials(identifier: str, statement_type: str = "all"):
 
 
 def get_segment_data(identifier: str, segment_type: str = "geographic"):
-    f"""
+    """
     Get revenue breakdown by business or geographic segments.
 
     Args:
@@ -212,7 +212,7 @@ def get_segment_data(identifier: str, segment_type: str = "geographic"):
 
 
 def get_key_metrics(identifier: str, metrics: list = None):
-    f"""
+    """
     Retrieve specific financial metrics from SEC filings.
 
     Args:
@@ -227,7 +227,7 @@ def get_key_metrics(identifier: str, metrics: list = None):
 
 
 def compare_periods(identifier: str, metric: str, start_year: int, end_year: int):
-    f"""
+    """
     Compare a financial metric across multiple fiscal years.
 
     Args:
@@ -265,7 +265,7 @@ def get_xbrl_concepts(
     concepts: list = None,
     form_type: str = "10-K",
 ):
-    f"""
+    """
     Extract specific XBRL concepts from a filing.
 
     <note>For general financial data, prefer get_financials() instead.
@@ -313,7 +313,7 @@ def discover_xbrl_concepts(
 
 
 def get_insider_transactions(identifier: str, form_types: list = None, days: int = 90, limit: int = 50):
-    f"""
+    """
     Get insider trading transactions from Forms 3, 4, and 5.
 
     <when-to-use>
@@ -354,7 +354,7 @@ def get_insider_summary(identifier: str, days: int = 180):
 
 
 def get_form4_details(identifier: str, accession_number: str):
-    f"""
+    """
     Get detailed information from a specific Form 4 filing.
 
     Args:
@@ -369,7 +369,7 @@ def get_form4_details(identifier: str, accession_number: str):
 
 
 def analyze_form4_transactions(identifier: str, days: int = 90, limit: int = 50):
-    f"""
+    """
     Extract detailed transaction data from Form 4 filings.
 
     <tip>Use this for comprehensive insider transaction analysis including
@@ -521,6 +521,11 @@ def register_tools(mcp: FastMCP):
         get_recommended_tools,
     ]
     for tool in tools:
+        # Python does not store an f-string expression in docstring position as
+        # __doc__, so tools that reuse the shared instructions declare a plain
+        # docstring with a {_FINANCIAL_INSTRUCTIONS} placeholder, expanded here.
+        if tool.__doc__ and "{_FINANCIAL_INSTRUCTIONS}" in tool.__doc__:
+            tool.__doc__ = tool.__doc__.replace("{_FINANCIAL_INSTRUCTIONS}", _FINANCIAL_INSTRUCTIONS)
         mcp.add_tool(tool)
 
 
