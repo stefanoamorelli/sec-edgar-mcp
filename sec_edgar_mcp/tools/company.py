@@ -70,17 +70,17 @@ class CompanyTools(BaseTools):
             return {"success": False, "error": f"Failed to get company facts: {e}"}
 
     def _extract_metrics(self, facts) -> Dict[str, Any]:
-        """Extract key financial metrics from company facts."""
+        """Extract key financial metrics from company facts using get_fact() API.
+
+        The edgar-tools ``EntityFacts`` object does not expose a ``.data`` dict;
+        each concept is retrieved via ``get_fact(name)`` which returns a
+        ``FinancialFact`` or ``None``.  Most US-GAAP concepts require the
+        ``us-gaap:`` namespace prefix to be found reliably.
+        """
+        import warnings
+
         metrics: Dict[str, Any] = {}
 
-        if not hasattr(facts, "data"):
-            return metrics
-
-        facts_data = facts.data
-        if "us-gaap" not in facts_data:
-            return metrics
-
-        gaap_facts = facts_data["us-gaap"]
         metric_names = [
             "Assets",
             "Liabilities",
@@ -88,33 +88,30 @@ class CompanyTools(BaseTools):
             "Revenues",
             "NetIncomeLoss",
             "EarningsPerShareBasic",
-            "CashAndCashEquivalents",
+            "CashAndCashEquivalentsAtCarryingValue",
             "CommonStockSharesOutstanding",
         ]
 
         for metric in metric_names:
-            if metric not in gaap_facts:
-                continue
-
-            metric_data = gaap_facts[metric]
-            if "units" not in metric_data:
-                continue
-
-            for unit_type, unit_data in metric_data["units"].items():
-                if not unit_data:
+            fact = None
+            for prefix in ("us-gaap:", "", "dei:"):
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fact = facts.get_fact(f"{prefix}{metric}")
+                    if fact is not None:
+                        break
+                except Exception:
                     continue
 
-                sorted_data = sorted(unit_data, key=lambda x: x.get("end", ""), reverse=True)
-                if sorted_data:
-                    latest = sorted_data[0]
-                    metrics[metric] = {
-                        "value": float(latest.get("val", 0)),
-                        "unit": unit_type,
-                        "period": latest.get("end", ""),
-                        "form": latest.get("form", ""),
-                        "fiscal_year": latest.get("fy", ""),
-                        "fiscal_period": latest.get("fp", ""),
-                    }
-                    break
+            if fact is not None:
+                metrics[metric] = {
+                    "value": float(fact.numeric_value),
+                    "unit": getattr(fact, "unit", "USD"),
+                    "period": str(getattr(fact, "period_end", "")),
+                    "form": getattr(fact, "form_type", ""),
+                    "fiscal_year": getattr(fact, "fiscal_year", ""),
+                    "fiscal_period": getattr(fact, "fiscal_period", ""),
+                }
 
         return metrics
