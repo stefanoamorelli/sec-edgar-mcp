@@ -8,6 +8,7 @@
   <a href="https://mseep.ai/app/0132880c-5e83-410b-a1d5-d3df08ed7b5c"><img alt="Verified on MseeP" src="https://mseep.ai/badge.svg" /></a>
   <a href="https://doi.org/10.5281/zenodo.17123166"><img alt="DOI" src="https://zenodo.org/badge/DOI/10.5281/zenodo.17123166.svg" /></a>
   <a href="https://github.com/stefanoamorelli/sec-edgar-mcp/actions/workflows/evals.yml"><img alt="Evals" src="https://github.com/stefanoamorelli/sec-edgar-mcp/actions/workflows/evals.yml/badge.svg" /></a>
+  <a href="https://mcpvitals.com/status/5a2a10732c"><img alt="MCP status" src="https://mcpvitals.com/badge/5a2a10732c.svg" /></a>
 </p>
 
 MCP server for accessing SEC EDGAR filings. Connects AI assistants to company filings, financial statements, and insider trading data with exact numeric precision.
