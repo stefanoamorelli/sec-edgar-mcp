@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 # Install server dependencies
-RUN pip install --no-cache-dir "mcp[cli]>=1.7.1,<2" "sec-edgar-toolkit>=0.2.0" "packaging" "requests" "python-dotenv"
+RUN pip install --no-cache-dir "mcp[cli]>=1.7.1,<2" "sec-edgar-toolkit[pandas]>=0.2.0" "packaging" "requests" "python-dotenv"
 
 # Copy source
 WORKDIR /app
