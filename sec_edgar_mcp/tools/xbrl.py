@@ -311,12 +311,14 @@ class XBRLExtractor:
         for stmt_type in statement_types:
             try:
                 if hasattr(xbrl, "find_statement"):
-                    statements, role, actual_type = xbrl.find_statement(stmt_type)
-                    if statements:
-                        financial_statements[actual_type] = {
-                            "role": role,
-                            "statement_count": len(statements),
-                        }
+                    statement = xbrl.find_statement(stmt_type)
+                    if statement and statement.get("data"):
+                        actual_type = statement.get("statement_type", stmt_type)
+                        if actual_type not in financial_statements:
+                            financial_statements[actual_type] = {
+                                "statement_count": len(statement["data"]),
+                                "concepts": list(statement["data"].keys()),
+                            }
             except Exception:
                 pass
 

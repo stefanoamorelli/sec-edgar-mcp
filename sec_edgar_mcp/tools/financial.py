@@ -362,7 +362,7 @@ class FinancialTools(BaseTools):
     def _extract_financials(self, filing, company, form_type):
         """Extract financials from a filing."""
         try:
-            from edgar.financials import Financials
+            from sec_edgar_toolkit.compat import Financials
 
             return Financials.extract(filing)
         except Exception:
