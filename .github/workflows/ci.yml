@@ -38,6 +38,9 @@ jobs:
       - name: Type check with mypy
         run: mypy sec_edgar_mcp
       
+      - name: Run tests
+        run: pytest tests -q
+      
       - name: Test package functionality
         env:
           SEC_EDGAR_USER_AGENT: "Test User (test@example.com)"

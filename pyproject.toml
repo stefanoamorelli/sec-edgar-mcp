@@ -29,7 +29,7 @@ include = ["sec_edgar_mcp*"]
 sec-edgar-mcp = "sec_edgar_mcp.server:main"
 
 [project.optional-dependencies]
-dev = ["ruff>=0.1.14", "mypy>=1.8"]
+dev = ["ruff>=0.1.14", "mypy>=1.8", "pytest>=8"]
 
 [tool.ruff]
 target-version = "py311"
