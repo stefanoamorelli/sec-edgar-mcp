@@ -5,7 +5,6 @@
   <a href="https://anaconda.org/stefanoamorelli/sec-edgar-mcp"><img alt="Conda Version" src="https://img.shields.io/conda/vn/stefanoamorelli/sec-edgar-mcp.svg" /></a>
   <img alt="Python: 3.11+" src="https://img.shields.io/badge/python-3.11+-brightgreen.svg" />
   <img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" />
-  <a href="https://mseep.ai/app/0132880c-5e83-410b-a1d5-d3df08ed7b5c"><img alt="Verified on MseeP" src="https://mseep.ai/badge.svg" /></a>
   <a href="https://doi.org/10.5281/zenodo.17123166"><img alt="DOI" src="https://zenodo.org/badge/DOI/10.5281/zenodo.17123166.svg" /></a>
   <a href="https://github.com/stefanoamorelli/sec-edgar-mcp/actions/workflows/evals.yml"><img alt="Evals" src="https://github.com/stefanoamorelli/sec-edgar-mcp/actions/workflows/evals.yml/badge.svg" /></a>
 </p>
