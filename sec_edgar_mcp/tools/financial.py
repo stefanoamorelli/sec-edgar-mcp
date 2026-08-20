@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from .base import BaseTools, ToolResponse
+from .base import BaseTools, ToolResponse, json_safe
 from .xbrl import (
     BALANCE_CONCEPTS,
     CASH_FLOW_CONCEPTS,
@@ -401,11 +401,13 @@ class FinancialTools(BaseTools):
                 stmt = stmt_method() if callable(stmt_method) else stmt_method
 
                 if stmt is not None and hasattr(stmt, "to_dict"):
-                    statements[key] = {
-                        "data": stmt.to_dict(orient="index"),
-                        "columns": list(stmt.columns),
-                        "index": list(stmt.index),
-                    }
+                    statements[key] = json_safe(
+                        {
+                            "data": stmt.to_dict(orient="index"),
+                            "columns": list(stmt.columns),
+                            "index": list(stmt.index),
+                        }
+                    )
                 elif xbrl:
                     discovered = self.xbrl_extractor.discover_statement_concepts(xbrl, filing, stmt_type)
                     if discovered:

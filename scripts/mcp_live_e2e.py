@@ -65,6 +65,11 @@ async def main():
             check(name, False, f"error: {res['error']}")
             return res
         try:
+            json.dumps(res, allow_nan=False)
+        except ValueError as exc:
+            check(f"{name} (strict JSON)", False, str(exc))
+            return res
+        try:
             check(name, ok(res), detail(res))
         except Exception as exc:  # noqa: BLE001
             check(name, False, f"assertion raised {type(exc).__name__}: {exc}")

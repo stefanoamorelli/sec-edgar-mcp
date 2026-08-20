@@ -1,11 +1,27 @@
 """Base utilities for SEC EDGAR tools."""
 
+import math
 from datetime import date, datetime
 from typing import Any, Dict, Optional
 
 from ..core.client import EdgarClient
 
 ToolResponse = Dict[str, Any]
+
+
+def json_safe(value: Any) -> Any:
+    """Replace NaN and infinities with None so the payload is valid JSON.
+
+    Statement tables come from DataFrames where a missing cell is NaN, and
+    json.dumps writes those as bare NaN, which no JSON parser accepts.
+    """
+    if isinstance(value, dict):
+        return {key: json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(item) for item in value]
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
 
 
 class BaseTools:
