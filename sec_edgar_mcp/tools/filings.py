@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from edgar import get_current_filings
+from sec_edgar_toolkit.compat import get_current_filings
 
 from ..core.models import FilingInfo
 from ..utils.exceptions import FilingNotFoundError

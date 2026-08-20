@@ -6,7 +6,7 @@ from mcp.server.fastmcp import FastMCP
 
 from sec_edgar_mcp.tools import CompanyTools, FilingsTools, FinancialTools, InsiderTools
 
-logging.getLogger("edgar").setLevel(logging.WARNING)
+logging.getLogger("sec_edgar_toolkit").setLevel(logging.WARNING)
 
 # Tool instances
 company_tools = CompanyTools()
@@ -533,9 +533,9 @@ def main():
     args = parser.parse_args()
 
     if args.transport == "streamable-http":
-        mcp = FastMCP("SEC EDGAR MCP", host=args.host, port=args.port, dependencies=["edgartools"])
+        mcp = FastMCP("SEC EDGAR MCP", host=args.host, port=args.port, dependencies=["sec-edgar-toolkit"])
     else:
-        mcp = FastMCP("SEC EDGAR MCP", dependencies=["edgartools"])
+        mcp = FastMCP("SEC EDGAR MCP", dependencies=["sec-edgar-toolkit"])
 
     register_tools(mcp)
     mcp.run(transport=args.transport)

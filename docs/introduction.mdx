@@ -55,7 +55,7 @@ With SEC Edgar MCP, AI assistants can:
 - **Due Diligence**: Comprehensive corporate transparency and compliance monitoring
 
 <Tip>
-  The server leverages the [EdgarTools Python library](https://github.com/dgunning/edgartools) to fetch data from official SEC sources and performs direct XBRL parsing for exact financial precision.
+  The server leverages the [sec-edgar-toolkit Python library](https://github.com/stefanoamorelli/sec-edgar-toolkit) to fetch data from official SEC sources and performs direct XBRL parsing for exact financial precision.
 </Tip>
 
 ## Architecture Overview
@@ -65,7 +65,7 @@ The SEC Edgar MCP server acts as a bridge between AI clients and SEC EDGAR data:
 ```mermaid
 graph TD
     A[MCP Client/AI Assistant] --> B[SEC Edgar MCP Server]
-    B --> C[EdgarTools Library]
+    B --> C[sec-edgar-toolkit Library]
     B --> D[Direct XBRL Parser]
     C --> E[SEC EDGAR REST API]
     D --> F[SEC Filing Documents]

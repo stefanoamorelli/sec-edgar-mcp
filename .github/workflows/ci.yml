@@ -30,12 +30,16 @@ jobs:
           pip install -e ".[dev]"
       
       - name: Lint with ruff
+        shell: bash
         run: |
           ruff check sec_edgar_mcp
           ruff format --check sec_edgar_mcp
       
       - name: Type check with mypy
         run: mypy sec_edgar_mcp
+      
+      - name: Run tests
+        run: pytest tests -q
       
       - name: Test package functionality
         env:

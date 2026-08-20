@@ -24,4 +24,4 @@ jobs:
 
       - name: Build Mintlify docs
         working-directory: docs
-        run: npx mintlify build
+        run: npx mintlify validate
