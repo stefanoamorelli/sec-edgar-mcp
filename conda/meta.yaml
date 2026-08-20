@@ -35,7 +35,7 @@ about:
     Created by Stefano Amorelli.
     
     Note: This package will automatically install additional dependencies
-    (mcp and edgartools) via pip during installation, as they are not 
+    (mcp and sec-edgar-toolkit) via pip during installation, as they are not 
     yet available on conda-forge.
   license: AGPL-3.0
   license_file: LICENSE

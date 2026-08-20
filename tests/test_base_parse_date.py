@@ -12,7 +12,7 @@ def _make_base():
 
 
 def test_parse_date_returns_none_for_non_iso_string():
-    # Regression: upstream edgartools can return a concatenation of filer
+    # Regression: the upstream library can return a concatenation of filer
     # names (e.g. from multi-filer Schedule 13D/G homepages) instead of a
     # period string. _parse_date must degrade gracefully rather than raise.
     base = _make_base()

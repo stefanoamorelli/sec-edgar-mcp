@@ -181,7 +181,7 @@ class XBRLExtractor:
         return self._get_concept_fallback(xbrl, concept_name)
 
     def _get_concept_fallback(self, xbrl, concept_name: str) -> Optional[Dict[str, Any]]:
-        """Fallback method using edgartools API."""
+        """Fallback that queries the XBRL object directly."""
         if hasattr(xbrl, "query"):
             try:
                 query_result = xbrl.query(f"concept={concept_name}").to_dataframe()

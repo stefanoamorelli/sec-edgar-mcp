@@ -12,7 +12,7 @@
 
 MCP server for accessing SEC EDGAR filings. Connects AI assistants to company filings, financial statements, and insider trading data with exact numeric precision.
 
-Built on [edgartools](https://github.com/dgunning/edgartools).
+Built on [sec-edgar-toolkit](https://github.com/stefanoamorelli/sec-edgar-toolkit).
 
 https://github.com/user-attachments/assets/d310eb42-b3ca-467d-92f7-7d132e6274fe
 
