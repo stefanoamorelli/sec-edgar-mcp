@@ -30,6 +30,7 @@ jobs:
           pip install -e ".[dev]"
       
       - name: Lint with ruff
+        shell: bash
         run: |
           ruff check sec_edgar_mcp
           ruff format --check sec_edgar_mcp
