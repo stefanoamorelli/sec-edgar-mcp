@@ -7,21 +7,20 @@ This project uses semantic versioning (semver) with a single source of truth for
 
 ### 1. PyPI / Python Package (`pyproject.toml`)
 - **Location**: `pyproject.toml` → `[project]` → `version`
-- **Current**: `1.0.0-alpha`
+- **Current**: `1.1.0`
 - **Usage**: This is the PRIMARY version source
 - **When to update**: Before creating a release tag
 
 ### 2. Python Module (`sec_edgar_mcp/__init__.py`)
 - **Location**: `sec_edgar_mcp/__init__.py` → `__version__`
-- **Current**: `1.0.0-alpha`
+- **Current**: `1.1.0`
 - **Usage**: Runtime version identification
 - **Must match**: `pyproject.toml` version
 
-### 3. Conda Package (`conda/meta.yaml`)
-- **Location**: Dynamic from Git tags
-- **Formula**: `environ.get('GIT_DESCRIBE_TAG', '1.0.0').lstrip('v')`
-- **Usage**: Automatically uses Git tag during conda-build
-- **Note**: Falls back to '1.0.0' if no tag exists
+### 3. Lockfile (`uv.lock`)
+- **Location**: `uv.lock` → the `sec-edgar-mcp` package entry
+- **Usage**: Re-run `uv lock` after changing the version so the lockfile matches
+- **Must match**: `pyproject.toml` version
 
 ## Release Process
 
@@ -48,7 +47,6 @@ git push origin main --tags
 2. Create release from tag `v1.0.0`
 3. This triggers:
    - PyPI publishing (uses `pyproject.toml` version)
-   - Conda publishing (uses Git tag `v1.0.0`)
    - Docker publishing (uses Git tag)
 
 ## Version Format
@@ -68,9 +66,8 @@ git push origin main --tags
 ## Important Notes
 
 1. **Git tags must start with 'v'**: `v1.0.0`, not `1.0.0`
-2. **Conda strips the 'v' automatically**: Tag `v1.0.0` becomes version `1.0.0`
-3. **PyPI version must match exactly**: What's in `pyproject.toml` is what gets published
-4. **Always update both files**: `pyproject.toml` AND `__init__.py`
+2. **PyPI version must match exactly**: What's in `pyproject.toml` is what gets published
+3. **Always update all three**: `pyproject.toml`, `__init__.py`, and `uv.lock`
 
 ## Checking Current Version
 
