@@ -6,6 +6,7 @@
   <img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" />
   <a href="https://doi.org/10.5281/zenodo.17123165"><img alt="DOI" src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.17123165-blue.svg" /></a>
   <a href="https://github.com/stefanoamorelli/sec-edgar-mcp/actions/workflows/evals.yml"><img alt="Evals" src="https://github.com/stefanoamorelli/sec-edgar-mcp/actions/workflows/evals.yml/badge.svg" /></a>
+  <a href="https://mcpvitals.com/status/5a2a10732c"><img alt="MCP status" src="https://mcpvitals.com/badge/5a2a10732c.svg" /></a>
 </p>
 
 MCP server for accessing SEC EDGAR filings. Connects AI assistants to company filings, financial statements, and insider trading data with exact numeric precision.
