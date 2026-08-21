@@ -146,11 +146,17 @@ class FilingsTools(BaseTools):
             "events": {},
         }
 
-        if hasattr(eightk, "date_of_report"):
-            try:
-                analysis["date_of_report"] = datetime.strptime(eightk.date_of_report, "%B %d, %Y").isoformat()
-            except (ValueError, TypeError):
-                pass
+        date_of_report = getattr(eightk, "date_of_report", None)
+        if date_of_report is not None:
+            if hasattr(date_of_report, "isoformat"):
+                # Current edgartools returns a datetime.date/datetime object.
+                analysis["date_of_report"] = date_of_report.isoformat()
+            else:
+                # Legacy string form ("%B %d, %Y").
+                try:
+                    analysis["date_of_report"] = datetime.strptime(date_of_report, "%B %d, %Y").isoformat()
+                except (ValueError, TypeError):
+                    pass
 
         item_descriptions = {
             "1.01": "Entry into Material Agreement",
