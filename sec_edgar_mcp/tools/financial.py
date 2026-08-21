@@ -182,7 +182,7 @@ class FinancialTools(BaseTools):
                     "StockholdersEquity",
                     "EarningsPerShareBasic",
                     "CommonStockSharesOutstanding",
-                    "CashAndCashEquivalents",
+                    "CashAndCashEquivalentsAtCarryingValue",
                 ]
 
             result_metrics = self._extract_metrics_from_facts(facts, metrics)
@@ -199,15 +199,42 @@ class FinancialTools(BaseTools):
 
     def compare_periods(self, identifier: str, metric: str, start_year: int, end_year: int) -> ToolResponse:
         """Compare a financial metric across periods."""
+        import warnings
+
         try:
             company = self.client.get_company(identifier)
             facts = company.get_facts()
 
-            fact_data = facts.get_fact(metric)
-            if fact_data is None or fact_data.empty:
+            # get_fact() requires namespace prefix for most concepts
+            fact = None
+            for prefix in ("us-gaap:", "", "dei:"):
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fact = facts.get_fact(f"{prefix}{metric}")
+                    if fact is not None:
+                        break
+                except Exception:
+                    continue
+
+            if fact is None:
                 return {"success": False, "error": f"No data found for metric: {metric}"}
 
-            period_data = self._filter_by_year_range(fact_data, start_year, end_year)
+            # FinancialFact exposes a single (latest) value, not a DataFrame.
+            # Build a single-period data point from it.
+            year = getattr(fact, "fiscal_year", 0) or 0
+            period_data = []
+            if start_year <= year <= end_year:
+                period_data.append(
+                    {
+                        "year": int(year),
+                        "period": getattr(fact, "fiscal_period", ""),
+                        "value": float(fact.numeric_value),
+                        "unit": getattr(fact, "unit", "USD"),
+                        "form": getattr(fact, "form_type", ""),
+                    }
+                )
+
             analysis = self._calculate_growth(period_data)
 
             return {
@@ -425,42 +452,40 @@ class FinancialTools(BaseTools):
         return filings.latest() if filings else None
 
     def _extract_metrics_from_facts(self, facts, metrics: List[str]) -> Dict[str, Any]:
-        """Extract metrics from company facts."""
+        """Extract metrics from company facts using the EntityFacts.get_fact() API.
+
+        The edgar-tools ``EntityFacts`` object does not expose a ``.data`` dict;
+        instead, each concept is retrieved via ``get_fact(name)`` which returns a
+        ``FinancialFact`` (or ``None`` when the concept is not reported by the
+        company).  Most US-GAAP concepts require the ``us-gaap:`` namespace
+        prefix to be found reliably.
+        """
+        import warnings
+
         result_metrics: Dict[str, Any] = {}
 
-        if not hasattr(facts, "data"):
-            return result_metrics
-
-        facts_data = facts.data
-        if "us-gaap" not in facts_data:
-            return result_metrics
-
-        gaap_facts = facts_data["us-gaap"]
-
         for metric in metrics:
-            if metric not in gaap_facts:
-                continue
-
-            metric_data = gaap_facts[metric]
-            if "units" not in metric_data:
-                continue
-
-            for unit_type, unit_data in metric_data["units"].items():
-                if not unit_data:
+            fact = None
+            # Try us-gaap: prefix first, then bare name, then dei: for DEI concepts
+            for prefix in ("us-gaap:", "", "dei:"):
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fact = facts.get_fact(f"{prefix}{metric}")
+                    if fact is not None:
+                        break
+                except Exception:
                     continue
 
-                sorted_data = sorted(unit_data, key=lambda x: x.get("end", ""), reverse=True)
-                if sorted_data:
-                    latest = sorted_data[0]
-                    result_metrics[metric] = {
-                        "value": float(latest.get("val", 0)),
-                        "unit": unit_type,
-                        "period": latest.get("end", ""),
-                        "form": latest.get("form", ""),
-                        "fiscal_year": latest.get("fy", ""),
-                        "fiscal_period": latest.get("fp", ""),
-                    }
-                    break
+            if fact is not None:
+                result_metrics[metric] = {
+                    "value": float(fact.numeric_value),
+                    "unit": getattr(fact, "unit", "USD"),
+                    "period": str(getattr(fact, "period_end", "")),
+                    "form": getattr(fact, "form_type", ""),
+                    "fiscal_year": getattr(fact, "fiscal_year", ""),
+                    "fiscal_period": getattr(fact, "fiscal_period", ""),
+                }
 
         return result_metrics
 
@@ -521,7 +546,9 @@ class FinancialTools(BaseTools):
         }
 
     def _discover_facts(self, facts, search_term: Optional[str]) -> List[Dict[str, Any]]:
-        """Discover available facts from company facts."""
+        """Discover available facts from company facts using get_fact() API."""
+        import warnings
+
         available_facts: List[Dict[str, Any]] = []
         common_facts = [
             "Assets",
@@ -536,30 +563,41 @@ class FinancialTools(BaseTools):
             "EarningsPerShareBasic",
             "EarningsPerShareDiluted",
             "CommonStockSharesOutstanding",
-            "CashAndCashEquivalents",
-            "AccountsReceivableNet",
+            "CashAndCashEquivalentsAtCarryingValue",
+            "AccountsReceivableNetCurrent",
             "InventoryNet",
             "PropertyPlantAndEquipmentNet",
             "Goodwill",
-            "IntangibleAssetsNet",
-            "LongTermDebt",
+            "IntangibleAssetsNetExcludingGoodwill",
+            "LongTermDebtNoncurrent",
             "ResearchAndDevelopmentExpense",
             "SellingGeneralAndAdministrativeExpense",
         ]
 
         for fact_name in common_facts:
-            try:
-                fact_data = facts.get_fact(fact_name)
-                if fact_data is not None and not fact_data.empty:
-                    if not search_term or search_term.lower() in fact_name.lower():
-                        available_facts.append(
-                            {
-                                "name": fact_name,
-                                "count": len(fact_data),
-                                "latest_period": fact_data.iloc[-1].get("end", "") if not fact_data.empty else None,
-                            }
-                        )
-            except Exception:
-                continue
+            fact = None
+            for prefix in ("us-gaap:", "", "dei:"):
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fact = facts.get_fact(f"{prefix}{fact_name}")
+                    if fact is not None:
+                        break
+                except Exception:
+                    continue
+
+            if fact is not None:
+                if not search_term or search_term.lower() in fact_name.lower():
+                    available_facts.append(
+                        {
+                            "name": fact_name,
+                            "value": float(fact.numeric_value),
+                            "unit": getattr(fact, "unit", "USD"),
+                            "period": str(getattr(fact, "period_end", "")),
+                            "form": getattr(fact, "form_type", ""),
+                            "fiscal_year": getattr(fact, "fiscal_year", ""),
+                            "fiscal_period": getattr(fact, "fiscal_period", ""),
+                        }
+                    )
 
         return available_facts
