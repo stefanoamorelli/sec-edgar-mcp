@@ -18,13 +18,26 @@ class FinancialTools(BaseTools):
         super().__init__()
         self.xbrl_extractor = XBRLExtractor()
 
-    def get_financials(self, identifier: str, statement_type: str = "all") -> ToolResponse:
-        """Get financial statements from the latest SEC filing."""
+    def get_financials(
+        self,
+        identifier: str,
+        statement_type: str = "all",
+        form_type: Optional[str] = None,
+    ) -> ToolResponse:
+        """Get financial statements from the latest matching SEC filing."""
         try:
+            if form_type not in (None, "10-K", "10-Q"):
+                return {"success": False, "error": 'form_type must be "10-K" or "10-Q"'}
+
             company = self.client.get_company(identifier)
-            latest_filing, form_type = self._get_latest_financial_filing(company)
+            if form_type:
+                latest_filing = company.get_filings(form=form_type).latest()
+            else:
+                latest_filing, form_type = self._get_latest_financial_filing(company)
 
             if not latest_filing:
+                if form_type:
+                    return {"success": False, "error": f"No {form_type} filings found"}
                 return {"success": False, "error": "No 10-K or 10-Q filings found"}
 
             financials = self._extract_financials(latest_filing, company, form_type)
