@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from .base import BaseTools, ToolResponse
+from .base import BaseTools, ToolResponse, json_safe
 from .xbrl import (
     BALANCE_CONCEPTS,
     CASH_FLOW_CONCEPTS,
@@ -18,13 +18,26 @@ class FinancialTools(BaseTools):
         super().__init__()
         self.xbrl_extractor = XBRLExtractor()
 
-    def get_financials(self, identifier: str, statement_type: str = "all") -> ToolResponse:
-        """Get financial statements from the latest SEC filing."""
+    def get_financials(
+        self,
+        identifier: str,
+        statement_type: str = "all",
+        form_type: Optional[str] = None,
+    ) -> ToolResponse:
+        """Get financial statements from the latest matching SEC filing."""
         try:
+            if form_type not in (None, "10-K", "10-Q"):
+                return {"success": False, "error": 'form_type must be "10-K" or "10-Q"'}
+
             company = self.client.get_company(identifier)
-            latest_filing, form_type = self._get_latest_financial_filing(company)
+            if form_type:
+                latest_filing = company.get_filings(form=form_type).latest()
+            else:
+                latest_filing, form_type = self._get_latest_financial_filing(company)
 
             if not latest_filing:
+                if form_type:
+                    return {"success": False, "error": f"No {form_type} filings found"}
                 return {"success": False, "error": "No 10-K or 10-Q filings found"}
 
             financials = self._extract_financials(latest_filing, company, form_type)
@@ -362,7 +375,7 @@ class FinancialTools(BaseTools):
     def _extract_financials(self, filing, company, form_type):
         """Extract financials from a filing."""
         try:
-            from edgar.financials import Financials
+            from sec_edgar_toolkit.compat import Financials
 
             return Financials.extract(filing)
         except Exception:
@@ -401,11 +414,13 @@ class FinancialTools(BaseTools):
                 stmt = stmt_method() if callable(stmt_method) else stmt_method
 
                 if stmt is not None and hasattr(stmt, "to_dict"):
-                    statements[key] = {
-                        "data": stmt.to_dict(orient="index"),
-                        "columns": list(stmt.columns),
-                        "index": list(stmt.index),
-                    }
+                    statements[key] = json_safe(
+                        {
+                            "data": stmt.to_dict(orient="index"),
+                            "columns": list(stmt.columns),
+                            "index": list(stmt.index),
+                        }
+                    )
                 elif xbrl:
                     discovered = self.xbrl_extractor.discover_statement_concepts(xbrl, filing, stmt_type)
                     if discovered:

@@ -1,20 +1,17 @@
 from typing import Optional
-from edgar import Company, set_identity, find_company, search
+from sec_edgar_toolkit.compat import Company, set_identity, find_company, search
 from ..utils.cache import TickerCache
 from ..utils.exceptions import CompanyNotFoundError
 from ..config import initialize_config
-import edgar
 
 
 class EdgarClient:
-    """Wrapper around edgar-tools for consistent API access."""
+    """Wrapper around sec-edgar-toolkit for consistent API access."""
 
     def __init__(self):
         self._user_agent = initialize_config()
-        # Set identity for edgar-tools
+        # Set identity for all SEC requests
         set_identity(self._user_agent)
-        # Also set the default user agent
-        edgar.set_identity(self._user_agent)
         self._ticker_cache = TickerCache(self._user_agent)
 
     def get_company(self, identifier: str) -> Company:
@@ -51,7 +48,6 @@ class EdgarClient:
     def search_companies(self, query: str, limit: int = 10) -> list:
         """Search for companies by name."""
         try:
-            # Use edgar-tools search functionality
             results = search(query)
 
             # Convert to list format and limit results

@@ -6,7 +6,7 @@ from mcp.server.fastmcp import FastMCP
 
 from sec_edgar_mcp.tools import CompanyTools, FilingsTools, FinancialTools, InsiderTools
 
-logging.getLogger("edgar").setLevel(logging.WARNING)
+logging.getLogger("sec_edgar_toolkit").setLevel(logging.WARNING)
 
 # Tool instances
 company_tools = CompanyTools()
@@ -170,9 +170,9 @@ def get_filing_sections(identifier: str, accession_number: str, form_type: str):
 # =============================================================================
 
 
-def get_financials(identifier: str, statement_type: str = "all"):
+def get_financials(identifier: str, statement_type: str = "all", form_type: str = None):
     """
-    Extract financial statements from the latest SEC filing.
+    Extract financial statements from the latest matching SEC filing.
 
     <when-to-use>
       Use this tool when users ask about income statements, revenue, net income,
@@ -183,6 +183,8 @@ def get_financials(identifier: str, statement_type: str = "all"):
     Args:
         identifier: Company ticker symbol or CIK number
         statement_type: "income", "balance", "cash", or "all" (default: "all")
+        form_type: "10-K" or "10-Q". When omitted, the latest of either form
+            is used.
 
     Returns:
         Financial statement data with exact values from XBRL.
@@ -193,7 +195,7 @@ def get_financials(identifier: str, statement_type: str = "all"):
       <period>Note the fiscal period end date.</period>
     </presentation>
     """
-    return financial_tools.get_financials(identifier, statement_type)
+    return financial_tools.get_financials(identifier, statement_type, form_type)
 
 
 def get_segment_data(identifier: str, segment_type: str = "geographic"):
@@ -538,9 +540,9 @@ def main():
     args = parser.parse_args()
 
     if args.transport == "streamable-http":
-        mcp = FastMCP("SEC EDGAR MCP", host=args.host, port=args.port, dependencies=["edgartools"])
+        mcp = FastMCP("SEC EDGAR MCP", host=args.host, port=args.port, dependencies=["sec-edgar-toolkit"])
     else:
-        mcp = FastMCP("SEC EDGAR MCP", dependencies=["edgartools"])
+        mcp = FastMCP("SEC EDGAR MCP", dependencies=["sec-edgar-toolkit"])
 
     register_tools(mcp)
     mcp.run(transport=args.transport)

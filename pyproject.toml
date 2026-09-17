@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sec-edgar-mcp"
-version = "1.0.8"
+version = "1.1.0"
 description = "SEC EDGAR MCP server for company filings and financial data"
 authors = [{ name = "Stefano Amorelli", email = "stefano@amorelli.tech" }]
 readme = "README.md"
@@ -15,7 +15,7 @@ classifiers = [
   "License :: OSI Approved :: GNU Affero General Public License v3",
   "Operating System :: OS Independent",
 ]
-dependencies = ["mcp[cli]>=1.7.1", "edgartools>=4.4.0", "requests>=2.31.0"]
+dependencies = ["mcp[cli]>=1.7.1,<2", "sec-edgar-toolkit[pandas]>=0.2.0", "requests>=2.31.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -29,11 +29,16 @@ include = ["sec_edgar_mcp*"]
 sec-edgar-mcp = "sec_edgar_mcp.server:main"
 
 [project.optional-dependencies]
-dev = ["ruff>=0.1.14", "mypy>=1.8"]
+dev = ["ruff>=0.1.14", "mypy>=1.8", "pytest>=8"]
 
 [tool.ruff]
 target-version = "py311"
 line-length = 120
+
+[tool.ruff.lint]
+# Ruff's implicit defaults widen with each release; pin the set the code
+# was written against so a CLI upgrade cannot turn CI red on its own.
+select = ["E4", "E7", "E9", "F"]
 
 [tool.mypy]
 python_version = "3.11"
