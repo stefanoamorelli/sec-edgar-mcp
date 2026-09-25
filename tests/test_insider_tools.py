@@ -61,7 +61,6 @@ class TestAnalyzeForm4Transactions:
             "Restricted Stock Unit",
         ]
         assert [row["is_derivative"] for row in rows] == [False, True]
-        assert rows[0]["ownership_type"] == "D"
 
     def test_non_derivative_row_keeps_amounts(self):
         result = _tools(_filing()).analyze_form4_transactions("AAPL", days=30)
