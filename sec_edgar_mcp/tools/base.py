@@ -2,9 +2,12 @@
 
 import math
 from datetime import date, datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
+
+import pandas as pd
 
 from ..core.client import EdgarClient
+from ..utils.constants import METRIC_CONCEPTS
 
 ToolResponse = Dict[str, Any]
 
@@ -79,3 +82,55 @@ class BaseTools:
         if period_days:
             ref["period_analyzed"] = f"Last {period_days} days from {datetime.now().strftime('%Y-%m-%d')}"
         return ref
+
+    def _metric_concepts(self, metric: str) -> List[str]:
+        """Resolve a metric name to its waterfall of XBRL concepts."""
+        return METRIC_CONCEPTS.get(metric, [metric])
+
+    def _metric_history(self, facts, metric: str) -> Optional[pd.DataFrame]:
+        """Every reported fact for a metric across its concept waterfall.
+
+        Adds ``concept`` (the tag reported) and ``priority`` (its waterfall position) columns.
+        """
+        frames = []
+        for priority, concept in enumerate(self._metric_concepts(metric)):
+            history = facts.get_fact(concept)
+            if history is not None and not history.empty:
+                frames.append(history.assign(concept=concept, priority=priority))
+        if not frames:
+            return None
+        return pd.concat(frames, ignore_index=True)
+
+    def _latest_metric_fact(self, facts, metric: str) -> Optional[Dict[str, Any]]:
+        """Most recently filed fact for a metric across its concept waterfall.
+
+        Ranks by filing date, then period end; the waterfall order only breaks ties.
+        """
+        history = self._metric_history(facts, metric)
+        if history is None:
+            return None
+        history = history[history["value"].notna()]
+        if history.empty:
+            return None
+        ranked = history.assign(filed=history["filed"].fillna(""), end=history["end"].fillna("")).sort_values(
+            ["filed", "end", "priority"], ascending=[False, False, True]
+        )
+        return ranked.iloc[0].to_dict()
+
+    def _fact_to_metric(self, fact: Dict[str, Any]) -> Dict[str, Any]:
+        """Serialize a fact row into the standard metric dict."""
+
+        def clean(value: Any) -> Any:
+            return "" if value is None or pd.isna(value) else value
+
+        fiscal_year = clean(fact.get("fy"))
+        return {
+            "value": float(fact["value"]),
+            "unit": fact.get("unit"),
+            "period": clean(fact.get("end")),
+            "form": clean(fact.get("form")),
+            "fiscal_year": int(fiscal_year) if fiscal_year != "" else "",
+            "fiscal_period": clean(fact.get("fp")),
+            "concept": fact.get("concept"),
+            "filing_date": clean(fact.get("filed")),
+        }

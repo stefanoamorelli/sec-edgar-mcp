@@ -19,3 +19,26 @@ XBRL_NAMESPACES = {
     "us-gaap": "http://fasb.org/us-gaap",
     "ifrs": "http://xbrl.ifrs.org/taxonomy",
 }
+
+# Waterfall of XBRL concepts per metric, in order of preference. Companies switch tags over time
+# (e.g. Apple moved from Revenues to RevenueFromContractWithCustomerExcludingAssessedTax in 2018),
+# so the most recently filed fact across all candidates wins; list order only breaks ties.
+METRIC_CONCEPTS = {
+    "Revenues": [
+        "Revenues",
+        "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "RevenueFromContractWithCustomerIncludingAssessedTax",
+        "SalesRevenueNet",
+    ],
+    "StockholdersEquity": [
+        "StockholdersEquity",
+        "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+    ],
+    "EarningsPerShareBasic": ["EarningsPerShareBasic", "EarningsPerShareBasicAndDiluted"],
+    "CashAndCashEquivalents": [
+        "CashAndCashEquivalents",
+        "CashAndCashEquivalentsAtCarryingValue",
+        "Cash",
+    ],
+    "CommonStockSharesOutstanding": ["CommonStockSharesOutstanding", "EntityCommonStockSharesOutstanding"],
+}
