@@ -1,6 +1,9 @@
 """Financial data tools for SEC EDGAR data."""
 
+from datetime import date
 from typing import Any, Dict, List, Optional
+
+import pandas as pd
 
 from .base import BaseTools, ToolResponse, json_safe
 from .xbrl import (
@@ -216,8 +219,8 @@ class FinancialTools(BaseTools):
             company = self.client.get_company(identifier)
             facts = company.get_facts()
 
-            fact_data = facts.get_fact(metric)
-            if fact_data is None or fact_data.empty:
+            fact_data = self._metric_history(facts, metric)
+            if fact_data is None:
                 return {"success": False, "error": f"No data found for metric: {metric}"}
 
             period_data = self._filter_by_year_range(fact_data, start_year, end_year)
@@ -441,8 +444,12 @@ class FinancialTools(BaseTools):
         """Extract metrics from company facts."""
         result_metrics: Dict[str, Any] = {}
 
-        if not hasattr(facts, "data"):
-            return result_metrics
+        for metric in metrics:
+            fact = self._latest_metric_fact(facts, metric)
+            if fact is not None:
+                result_metrics[metric] = self._fact_to_metric(fact)
+
+        return result_metrics
 
         facts_data = facts.data
         if "us-gaap" not in facts_data:
@@ -478,24 +485,42 @@ class FinancialTools(BaseTools):
         return result_metrics
 
     def _filter_by_year_range(self, fact_data, start_year: int, end_year: int) -> List[Dict[str, Any]]:
-        """Filter fact data by year range."""
-        period_data: List[Dict[str, Any]] = []
+        """Filter fact data by year range, keeping one fact per fiscal year/period.
+
+        Each filing also repeats prior-period comparatives, so per (year, period) the latest
+        filed fact wins, then the latest period end, then the duration closest to the period's
+        own length (a full year for FY, the discrete quarter rather than year-to-date for Qn),
+        then the concept waterfall order.
+        """
+        chosen: Dict[tuple, Dict[str, Any]] = {}
+        ranks: Dict[tuple, tuple] = {}
         for _, row in fact_data.iterrows():
             try:
                 year = int(row.get("fy", 0))
-                if start_year <= year <= end_year:
-                    period_data.append(
-                        {
-                            "year": year,
-                            "period": row.get("fp", ""),
-                            "value": float(row.get("value", 0)),
-                            "unit": row.get("unit", "USD"),
-                            "form": row.get("form", ""),
-                        }
-                    )
+                if not start_year <= year <= end_year or pd.isna(row.get("value")):
+                    continue
+                period = row.get("fp", "")
+                start, end = row.get("start"), row.get("end")
+                duration = (date.fromisoformat(end) - date.fromisoformat(start)).days if pd.notna(start) else 0
+                expected = 365 if period == "FY" else 91
+                fit = -abs(duration - expected) if duration else 0
+                rank = (row.get("filed") or "", end or "", fit, -row.get("priority", 0))
+                group = (year, period)
+                if group not in ranks or rank > ranks[group]:
+                    ranks[group] = rank
+                    chosen[group] = {
+                        "year": year,
+                        "period": period,
+                        "value": float(row.get("value", 0)),
+                        "unit": row.get("unit", "USD"),
+                        "form": row.get("form", ""),
+                    }
             except Exception:
                 continue
-        period_data.sort(key=lambda x: x["year"])
+        period_order = {"Q1": 1, "Q2": 2, "Q3": 3, "Q4": 4, "FY": 5}
+        period_data: List[Dict[str, Any]] = sorted(
+            chosen.values(), key=lambda x: (x["year"], period_order.get(x["period"], 0))
+        )
         return period_data
 
     def _calculate_growth(self, period_data: List[Dict[str, Any]]) -> Dict[str, Any]:

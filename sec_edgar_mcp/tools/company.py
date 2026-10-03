@@ -72,15 +72,6 @@ class CompanyTools(BaseTools):
     def _extract_metrics(self, facts) -> Dict[str, Any]:
         """Extract key financial metrics from company facts."""
         metrics: Dict[str, Any] = {}
-
-        if not hasattr(facts, "data"):
-            return metrics
-
-        facts_data = facts.data
-        if "us-gaap" not in facts_data:
-            return metrics
-
-        gaap_facts = facts_data["us-gaap"]
         metric_names = [
             "Assets",
             "Liabilities",
@@ -93,28 +84,8 @@ class CompanyTools(BaseTools):
         ]
 
         for metric in metric_names:
-            if metric not in gaap_facts:
-                continue
-
-            metric_data = gaap_facts[metric]
-            if "units" not in metric_data:
-                continue
-
-            for unit_type, unit_data in metric_data["units"].items():
-                if not unit_data:
-                    continue
-
-                sorted_data = sorted(unit_data, key=lambda x: x.get("end", ""), reverse=True)
-                if sorted_data:
-                    latest = sorted_data[0]
-                    metrics[metric] = {
-                        "value": float(latest.get("val", 0)),
-                        "unit": unit_type,
-                        "period": latest.get("end", ""),
-                        "form": latest.get("form", ""),
-                        "fiscal_year": latest.get("fy", ""),
-                        "fiscal_period": latest.get("fp", ""),
-                    }
-                    break
+            fact = self._latest_metric_fact(facts, metric)
+            if fact is not None:
+                metrics[metric] = self._fact_to_metric(fact)
 
         return metrics
