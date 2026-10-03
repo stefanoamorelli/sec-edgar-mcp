@@ -14,7 +14,7 @@ providers:
         name: sec-edgar-mcp
         cwd: '../'
         env:
-          SEC_EDGAR_USER_AGENT: '${SEC_EDGAR_USER_AGENT}'
+          SEC_EDGAR_USER_AGENT: '{{ env.SEC_EDGAR_USER_AGENT }}'
       timeout: 120000
       maxTotalTimeout: 600000
       resetTimeoutOnProgress: true
