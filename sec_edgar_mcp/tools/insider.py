@@ -64,6 +64,7 @@ class InsiderTools(BaseTools):
                 "form_5_count": 0,
                 "recent_filings": [],
                 "insiders": set(),
+                "parsing_errors": 0,
             }
 
             cutoff_date = datetime.now() - timedelta(days=days)
@@ -128,8 +129,8 @@ class InsiderTools(BaseTools):
                         "is_officer": getattr(form4, "is_officer", False),
                         "is_ten_percent_owner": getattr(form4, "is_ten_percent_owner", False),
                     }
-            except Exception:
-                pass
+            except Exception as e:
+                details["parsing_error"] = f"Could not parse Form 4 document: {e}"
 
             return {"success": True, "form4_details": details}
         except Exception as e:
@@ -234,8 +235,8 @@ class InsiderTools(BaseTools):
                     for attr in ["owner_name", "owner_title", "is_director", "is_officer"]:
                         if hasattr(ownership, attr):
                             transaction[attr] = getattr(ownership, attr)
-            except Exception:
-                pass
+            except Exception as e:
+                transaction["parsing_error"] = f"Could not parse ownership document: {e}"
 
             return transaction
         except Exception:
@@ -260,10 +261,10 @@ class InsiderTools(BaseTools):
         """Add insider name to summary if available."""
         try:
             ownership = filing.obj()
-            if ownership and hasattr(ownership, "owner_name"):
+            if ownership and getattr(ownership, "owner_name", ""):
                 summary["insiders"].add(ownership.owner_name)
         except Exception:
-            pass
+            summary["parsing_errors"] += 1
 
     def _extract_form4_details(self, filing) -> Dict[str, Any]:
         """Extract detailed Form 4 information."""
@@ -301,15 +302,22 @@ class InsiderTools(BaseTools):
                 if transactions:
                     transaction["transactions"] = transactions
 
-            # Holdings data
-            if hasattr(form4, "holdings") and form4.holdings:
-                holdings = []
-                for holding in form4.holdings:
-                    holding_data = self._extract_holding_data(holding)
-                    if holding_data:
-                        holdings.append(holding_data)
-                if holdings:
-                    transaction["holdings"] = holdings
+            # Holdings data: the toolkit exposes non-derivative holdings as
+            # objects and keeps derivative holdings (options, RSUs) in the raw
+            # parsed dictionary, so both sources are read.
+            holdings = []
+            for holding in getattr(form4, "holdings", None) or []:
+                holding_data = self._extract_holding_data(holding)
+                if holding_data:
+                    holding_data["is_derivative"] = False
+                    holdings.append(holding_data)
+            for holding in self._derivative_holdings(form4):
+                holding_data = self._extract_holding_data(holding)
+                if holding_data:
+                    holding_data["is_derivative"] = True
+                    holdings.append(holding_data)
+            if holdings:
+                transaction["holdings"] = holdings
 
         except Exception as e:
             transaction["parsing_error"] = f"Could not extract detailed data: {e}"
@@ -320,6 +328,8 @@ class InsiderTools(BaseTools):
         """Extract data from a transaction object."""
         tx_data = {}
         attrs = [
+            ("security_title", None),
+            ("is_derivative", bool),
             ("transaction_date", str),
             ("transaction_code", None),
             ("shares", float),
@@ -327,23 +337,50 @@ class InsiderTools(BaseTools):
             ("transaction_amount", float),
             ("shares_owned_after", float),
             ("acquisition_or_disposition", None),
+            ("ownership_type", None),
+            ("nature_of_ownership", None),
         ]
 
         for attr, converter in attrs:
             if hasattr(tx, attr):
                 value = getattr(tx, attr)
-                if value is not None:
+                if value is not None and value != "":
                     tx_data[attr] = converter(value) if converter else value
 
         return tx_data if tx_data else None
 
-    def _extract_holding_data(self, holding) -> Optional[Dict[str, Any]]:
-        """Extract data from a holding object."""
-        holding_data = {}
+    def _derivative_holdings(self, form4) -> List[Any]:
+        """Return derivative holdings from the parsed form, in either shape."""
+        if isinstance(form4, dict):
+            return list(form4.get("derivative_holdings") or [])
+        return list(getattr(form4, "derivative_holdings", None) or [])
 
-        if hasattr(holding, "shares_owned") and holding.shares_owned:
-            holding_data["shares_owned"] = float(holding.shares_owned)
-        if hasattr(holding, "ownership_nature"):
-            holding_data["ownership_nature"] = holding.ownership_nature
+    def _extract_holding_data(self, holding) -> Optional[Dict[str, Any]]:
+        """Extract data from a holding object or raw holding dictionary."""
+
+        def get(*names):
+            for name in names:
+                value = holding.get(name) if isinstance(holding, dict) else getattr(holding, name, None)
+                if value is not None and value != "":
+                    return value
+            return None
+
+        holding_data: Dict[str, Any] = {}
+
+        title = get("security_title")
+        if title:
+            holding_data["security_title"] = title
+        shares = get("shares_owned", "shares")
+        if shares:
+            holding_data["shares_owned"] = float(shares)
+        ownership_type = get("ownership_type", "direct_or_indirect_ownership")
+        if ownership_type:
+            holding_data["ownership_type"] = ownership_type
+        nature = get("ownership_nature", "nature_of_ownership")
+        if nature:
+            holding_data["ownership_nature"] = nature
+        underlying = get("underlying_security")
+        if isinstance(underlying, dict) and underlying.get("title"):
+            holding_data["underlying_security"] = underlying
 
         return holding_data if holding_data else None
