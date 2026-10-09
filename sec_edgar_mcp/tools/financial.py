@@ -1,5 +1,6 @@
 """Financial data tools for SEC EDGAR data."""
 
+from datetime import date
 from typing import Any, Dict, List, Optional
 
 from .base import BaseTools, ToolResponse, json_safe
@@ -9,6 +10,37 @@ from .xbrl import (
     INCOME_CONCEPTS,
     XBRLExtractor,
 )
+
+# The company-facts API tags every value with the fiscal year of the filing
+# that reported it (``fy``), and a 10-K carries prior-year comparatives and
+# quarterly rows under that same ``fy``, so annual values have to be picked by
+# period end date and form.
+ANNUAL_FORMS = ("10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A")
+ANNUAL_DURATION_DAYS = (340, 380)  # covers 52- and 53-week fiscal years
+
+# Filers move between these concepts over time (ASC 606 retired ``Revenues``
+# for most companies from 2018), so a lookup for one tries the rest of its
+# family. The requested concept always goes first.
+CONCEPT_FAMILIES = (
+    (
+        "Revenues",
+        "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "SalesRevenueNet",
+    ),
+    (
+        "CashAndCashEquivalents",
+        "CashAndCashEquivalentsAtCarryingValue",
+        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+    ),
+)
+
+
+def concept_candidates(metric: str) -> List[str]:
+    """The requested concept first, then the other members of its family."""
+    for family in CONCEPT_FAMILIES:
+        if metric in family:
+            return [metric] + [concept for concept in family if concept != metric]
+    return [metric]
 
 
 class FinancialTools(BaseTools):
@@ -216,11 +248,24 @@ class FinancialTools(BaseTools):
             company = self.client.get_company(identifier)
             facts = company.get_facts()
 
-            fact_data = facts.get_fact(metric)
-            if fact_data is None or fact_data.empty:
-                return {"success": False, "error": f"No data found for metric: {metric}"}
+            tried: List[str] = []
+            period_data: List[Dict[str, Any]] = []
+            for concept in concept_candidates(metric):
+                tried.append(concept)
+                fact_data = facts.get_fact(concept)
+                if fact_data is None or fact_data.empty:
+                    continue
+                period_data = self._filter_by_year_range(fact_data, start_year, end_year)
+                if period_data:
+                    break
+            if not period_data:
+                return {
+                    "success": False,
+                    "error": (
+                        f"No annual data for {metric} between {start_year} and {end_year} (tried {', '.join(tried)})"
+                    ),
+                }
 
-            period_data = self._filter_by_year_range(fact_data, start_year, end_year)
             analysis = self._calculate_growth(period_data)
 
             return {
@@ -228,6 +273,7 @@ class FinancialTools(BaseTools):
                 "cik": company.cik,
                 "name": company.name,
                 "metric": metric,
+                "concept": concept,
                 "period_data": period_data,
                 "analysis": analysis,
             }
@@ -438,65 +484,91 @@ class FinancialTools(BaseTools):
         return filings.latest() if filings else None
 
     def _extract_metrics_from_facts(self, facts, metrics: List[str]) -> Dict[str, Any]:
-        """Extract metrics from company facts."""
+        """Latest reported value per metric.
+
+        Each concept in the metric's family is tried and the one with the most
+        recent period end wins, so ``Revenues`` resolves to the post-ASC 606
+        concept for filers that stopped tagging the old one.
+        """
         result_metrics: Dict[str, Any] = {}
 
-        if not hasattr(facts, "data"):
-            return result_metrics
-
-        facts_data = facts.data
-        if "us-gaap" not in facts_data:
-            return result_metrics
-
-        gaap_facts = facts_data["us-gaap"]
-
         for metric in metrics:
-            if metric not in gaap_facts:
-                continue
-
-            metric_data = gaap_facts[metric]
-            if "units" not in metric_data:
-                continue
-
-            for unit_type, unit_data in metric_data["units"].items():
-                if not unit_data:
+            best: Optional[Dict[str, Any]] = None
+            for concept in concept_candidates(metric):
+                fact_data = facts.get_fact(concept)
+                if fact_data is None or fact_data.empty:
                     continue
-
-                sorted_data = sorted(unit_data, key=lambda x: x.get("end", ""), reverse=True)
-                if sorted_data:
-                    latest = sorted_data[0]
-                    result_metrics[metric] = {
-                        "value": float(latest.get("val", 0)),
-                        "unit": unit_type,
-                        "period": latest.get("end", ""),
-                        "form": latest.get("form", ""),
-                        "fiscal_year": latest.get("fy", ""),
-                        "fiscal_period": latest.get("fp", ""),
-                    }
-                    break
+                # Same period end and filing: the row with the latest start (the
+                # discrete quarter, not the year-to-date value) wins.
+                latest = fact_data.sort_values(by=["end", "filed", "start"], na_position="first").iloc[-1]
+                start = latest.get("start")
+                candidate = {
+                    "concept": concept,
+                    "value": float(latest.get("value", 0)),
+                    "unit": latest.get("unit", "USD"),
+                    "period": latest.get("end", ""),
+                    "start": start if isinstance(start, str) else None,
+                    "form": latest.get("form", ""),
+                    "fiscal_year": latest.get("fy", ""),
+                    "fiscal_period": latest.get("fp", ""),
+                }
+                if best is None or str(candidate["period"]) > str(best["period"]):
+                    best = candidate
+            if best is not None:
+                result_metrics[metric] = best
 
         return result_metrics
 
     def _filter_by_year_range(self, fact_data, start_year: int, end_year: int) -> List[Dict[str, Any]]:
-        """Filter fact data by year range."""
-        period_data: List[Dict[str, Any]] = []
+        """One as-reported annual value per fiscal year ending in the range.
+
+        Rows are picked by period end date, not by ``fy`` (the fiscal year of
+        the filing): annual-report forms only, instant values or durations of
+        about a year, and when several filings report the same period end
+        (comparatives, restatements) the most recently filed value wins.
+        """
+        by_end: Dict[str, Dict[str, Any]] = {}
         for _, row in fact_data.iterrows():
-            try:
-                year = int(row.get("fy", 0))
-                if start_year <= year <= end_year:
-                    period_data.append(
-                        {
-                            "year": year,
-                            "period": row.get("fp", ""),
-                            "value": float(row.get("value", 0)),
-                            "unit": row.get("unit", "USD"),
-                            "form": row.get("form", ""),
-                        }
-                    )
-            except Exception:
+            end = row.get("end")
+            if not isinstance(end, str) or len(end) < 4:
                 continue
-        period_data.sort(key=lambda x: x["year"])
-        return period_data
+            try:
+                year = int(end[:4])
+            except ValueError:
+                continue
+            if not (start_year <= year <= end_year):
+                continue
+            if row.get("fp") != "FY" or row.get("form") not in ANNUAL_FORMS:
+                continue
+            start = row.get("start")
+            if isinstance(start, str) and start and not self._is_annual_duration(start, end):
+                continue
+            filed = str(row.get("filed") or "")
+            if end in by_end and by_end[end]["filed"] >= filed:
+                continue
+            try:
+                value = float(row.get("value", 0))
+            except (TypeError, ValueError):
+                continue
+            by_end[end] = {
+                "year": year,
+                "period": "FY",
+                "value": value,
+                "unit": row.get("unit", "USD"),
+                "form": row.get("form", ""),
+                "end": end,
+                "filed": filed,
+            }
+        return [by_end[end] for end in sorted(by_end)]
+
+    @staticmethod
+    def _is_annual_duration(start: str, end: str) -> bool:
+        try:
+            days = (date.fromisoformat(end) - date.fromisoformat(start)).days
+        except ValueError:
+            return False
+        low, high = ANNUAL_DURATION_DAYS
+        return low <= days <= high
 
     def _calculate_growth(self, period_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Calculate growth metrics from period data."""
