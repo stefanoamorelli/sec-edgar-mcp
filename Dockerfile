@@ -1,4 +1,4 @@
-FROM python:3.14-slim
+FROM python:3.15-slim
 
 # Install server dependencies
 RUN pip install --no-cache-dir "mcp[cli]>=1.7.1,<2" "sec-edgar-toolkit[pandas]>=0.2.0" "packaging" "requests" "python-dotenv"
