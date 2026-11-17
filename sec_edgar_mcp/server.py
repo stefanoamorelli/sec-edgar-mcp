@@ -2,11 +2,15 @@
 
 import argparse
 import logging
+from typing import Any, Callable, TypeVar
+
 from mcp.server.fastmcp import FastMCP
 
 from sec_edgar_mcp.tools import CompanyTools, FilingsTools, FinancialTools, InsiderTools
 
 logging.getLogger("sec_edgar_toolkit").setLevel(logging.WARNING)
+
+_ToolFn = TypeVar("_ToolFn", bound=Callable[..., Any])
 
 # Tool instances
 company_tools = CompanyTools()
@@ -31,6 +35,18 @@ _FINANCIAL_INSTRUCTIONS = """
   </context>
 </instructions>
 """
+
+
+def _financial_tool(fn: _ToolFn) -> _ToolFn:
+    """Append the shared data-integrity instructions to a tool's description.
+
+    These instructions used to be interpolated into each function's docstring
+    with an f-string. Python does not store an f-string literal as __doc__, so
+    every tool written that way reached FastMCP with no description at all and
+    the instructions never got in front of the model.
+    """
+    fn.__doc__ = (fn.__doc__ or "").rstrip() + _FINANCIAL_INSTRUCTIONS
+    return fn
 
 
 # =============================================================================
@@ -78,8 +94,9 @@ def search_companies(query: str, limit: int = 10):
     return company_tools.search_companies(query, limit)
 
 
+@_financial_tool
 def get_company_facts(identifier: str):
-    f"""
+    """
     Retrieve all available XBRL facts for a company from SEC filings.
 
     Args:
@@ -87,7 +104,6 @@ def get_company_facts(identifier: str):
 
     Returns:
         Available financial metrics with most recent values.
-    {_FINANCIAL_INSTRUCTIONS}
     """
     return company_tools.get_company_facts(identifier)
 
@@ -170,8 +186,9 @@ def get_filing_sections(identifier: str, accession_number: str, form_type: str):
 # =============================================================================
 
 
+@_financial_tool
 def get_financials(identifier: str, statement_type: str = "all", form_type: str = None):
-    f"""
+    """
     Extract financial statements from the latest matching SEC filing.
 
     <when-to-use>
@@ -188,7 +205,6 @@ def get_financials(identifier: str, statement_type: str = "all", form_type: str 
 
     Returns:
         Financial statement data with exact values from XBRL.
-    {_FINANCIAL_INSTRUCTIONS}
     <presentation>
       <formatting>Format large numbers with appropriate scale (millions/billions).</formatting>
       <comparison>Include year-over-year comparisons when multiple periods are available.</comparison>
@@ -198,8 +214,9 @@ def get_financials(identifier: str, statement_type: str = "all", form_type: str 
     return financial_tools.get_financials(identifier, statement_type, form_type)
 
 
+@_financial_tool
 def get_segment_data(identifier: str, segment_type: str = "geographic"):
-    f"""
+    """
     Get revenue breakdown by business or geographic segments.
 
     Args:
@@ -208,13 +225,13 @@ def get_segment_data(identifier: str, segment_type: str = "geographic"):
 
     Returns:
         Segment revenue data from the latest 10-K filing.
-    {_FINANCIAL_INSTRUCTIONS}
     """
     return financial_tools.get_segment_data(identifier, segment_type)
 
 
+@_financial_tool
 def get_key_metrics(identifier: str, metrics: list = None):
-    f"""
+    """
     Retrieve specific financial metrics from SEC filings.
 
     Args:
@@ -223,13 +240,13 @@ def get_key_metrics(identifier: str, metrics: list = None):
 
     Returns:
         Requested metrics with values, periods, and filing references.
-    {_FINANCIAL_INSTRUCTIONS}
     """
     return financial_tools.get_key_metrics(identifier, metrics)
 
 
+@_financial_tool
 def compare_periods(identifier: str, metric: str, start_year: int, end_year: int):
-    f"""
+    """
     Compare a financial metric across multiple fiscal years.
 
     Args:
@@ -240,7 +257,6 @@ def compare_periods(identifier: str, metric: str, start_year: int, end_year: int
 
     Returns:
         Year-over-year comparison with growth rates and CAGR.
-    {_FINANCIAL_INSTRUCTIONS}
     """
     return financial_tools.compare_periods(identifier, metric, start_year, end_year)
 
@@ -261,13 +277,14 @@ def discover_company_metrics(identifier: str, search_term: str = None):
     return financial_tools.discover_company_metrics(identifier, search_term)
 
 
+@_financial_tool
 def get_xbrl_concepts(
     identifier: str,
     accession_number: str = None,
     concepts: list = None,
     form_type: str = "10-K",
 ):
-    f"""
+    """
     Extract specific XBRL concepts from a filing.
 
     <note>For general financial data, prefer get_financials() instead.
@@ -281,7 +298,6 @@ def get_xbrl_concepts(
 
     Returns:
         Extracted XBRL concept values with exact precision.
-    {_FINANCIAL_INSTRUCTIONS}
     """
     return financial_tools.get_xbrl_concepts(identifier, accession_number, concepts, form_type)
 
@@ -314,8 +330,9 @@ def discover_xbrl_concepts(
 # =============================================================================
 
 
+@_financial_tool
 def get_insider_transactions(identifier: str, form_types: list = None, days: int = 90, limit: int = 50):
-    f"""
+    """
     Get insider trading transactions from Forms 3, 4, and 5.
 
     <when-to-use>
@@ -331,7 +348,6 @@ def get_insider_transactions(identifier: str, form_types: list = None, days: int
 
     Returns:
         Insider transactions with owner names, titles, and SEC filing URLs.
-    {_FINANCIAL_INSTRUCTIONS}
     <presentation>
       <insider>Clearly identify the insider (name, title, relationship).</insider>
       <direction>Distinguish between purchases (acquisitions) and sales (dispositions).</direction>
@@ -355,8 +371,9 @@ def get_insider_summary(identifier: str, days: int = 180):
     return insider_tools.get_insider_summary(identifier, days)
 
 
+@_financial_tool
 def get_form4_details(identifier: str, accession_number: str):
-    f"""
+    """
     Get detailed information from a specific Form 4 filing.
 
     Args:
@@ -365,13 +382,13 @@ def get_form4_details(identifier: str, accession_number: str):
 
     Returns:
         Detailed Form 4 data including owner info, transactions, and holdings.
-    {_FINANCIAL_INSTRUCTIONS}
     """
     return insider_tools.get_form4_details(identifier, accession_number)
 
 
+@_financial_tool
 def analyze_form4_transactions(identifier: str, days: int = 90, limit: int = 50):
-    f"""
+    """
     Extract detailed transaction data from Form 4 filings.
 
     <tip>Use this for comprehensive insider transaction analysis including
@@ -384,7 +401,6 @@ def analyze_form4_transactions(identifier: str, days: int = 90, limit: int = 50)
 
     Returns:
         Detailed transaction data with exact values from SEC filings.
-    {_FINANCIAL_INSTRUCTIONS}
     """
     return insider_tools.analyze_form4_transactions(identifier, days, limit)
 
